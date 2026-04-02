@@ -1041,6 +1041,131 @@
     );
   }
 
+  /* V2 Loading Screen */
+  .v2-loading-screen {
+    display: flex;
+    min-height: 100vh;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .v2-loading-bg {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      135deg,
+      hsl(45 17% 96%) 0%,
+      hsl(40 14% 94%) 50%,
+      hsl(35 12% 92%) 100%
+    );
+  }
+
+  .dark .v2-loading-bg {
+    background: linear-gradient(
+      135deg,
+      hsl(0 0% 6%) 0%,
+      hsl(0 0% 8%) 50%,
+      hsl(0 0% 10%) 100%
+    );
+  }
+
+  .v2-loading-bg::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(
+      ellipse 80% 50% at 50% 0%,
+      hsl(var(--claude-accent) / 0.08) 0%,
+      transparent 60%
+    );
+  }
+
+  .dark .v2-loading-bg::before {
+    background: radial-gradient(
+      ellipse 80% 50% at 50% 0%,
+      hsl(var(--claude-accent) / 0.12) 0%,
+      transparent 60%
+    );
+  }
+
+  .v2-loading-content {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 48px;
+  }
+
+  .v2-loading-logo {
+    width: 72px;
+    height: 72px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 24px;
+    animation: v2-logo-float 3s ease-in-out infinite;
+  }
+
+  @keyframes v2-logo-float {
+    0%, 100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-8px);
+    }
+  }
+
+  .v2-loading-title {
+    font-size: 28px;
+    font-weight: 700;
+    color: hsl(var(--claude-text));
+    letter-spacing: -0.02em;
+    margin-bottom: 4px;
+  }
+
+  .v2-loading-subtitle {
+    font-size: 14px;
+    font-weight: 400;
+    color: hsl(var(--claude-text-secondary));
+    margin-bottom: 32px;
+  }
+
+  .v2-loading-dots {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .v2-loading-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: hsl(var(--claude-accent));
+    animation: v2-dot-bounce 1.4s ease-in-out infinite;
+  }
+
+  .v2-loading-dot:nth-child(2) {
+    animation-delay: 0.16s;
+  }
+
+  .v2-loading-dot:nth-child(3) {
+    animation-delay: 0.32s;
+  }
+
+  @keyframes v2-dot-bounce {
+    0%, 80%, 100% {
+      transform: scale(0.6);
+      opacity: 0.4;
+    }
+    40% {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+
+  /* V2 Sidebar Header */
   .v2-sidebar-header {
     padding: 16px;
     border-bottom: 1px solid hsl(var(--claude-border));
