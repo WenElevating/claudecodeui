@@ -2154,4 +2154,203 @@
       max-width: 1000px;
     }
   }
+
+  /* ========================================
+     V2 Settings
+     ======================================== */
+
+  .v2-settings-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: hsl(var(--claude-bg));
+
+    /* Override V1 theme tokens so shared Button/Link components match V2 amber accent */
+    --primary: var(--claude-accent);
+    --primary-foreground: 0 0% 100%;
+    --ring: var(--claude-accent);
+    --accent: var(--claude-tertiary);
+    --accent-foreground: var(--claude-text);
+    --secondary: var(--claude-tertiary);
+    --secondary-foreground: var(--claude-text);
+    --border: var(--claude-border);
+    --input: var(--claude-border-default);
+    --muted: var(--claude-tertiary);
+    --muted-foreground: var(--claude-text-secondary);
+    --background: var(--claude-bg);
+    --foreground: var(--claude-text);
+    --card: var(--claude-elevated);
+    --card-foreground: var(--claude-text);
+  }
+
+  /* Plugin section: override hardcoded blue to V2 amber accent */
+  .v2-settings-backdrop .bg-blue-600 {
+    background-color: hsl(var(--claude-accent));
+  }
+  .v2-settings-backdrop .hover\:bg-blue-700:hover {
+    background-color: hsl(var(--claude-accent-light));
+  }
+  .v2-settings-backdrop .bg-blue-500\/30 {
+    background-color: hsl(var(--claude-accent) / 0.3);
+  }
+  .v2-settings-backdrop .text-blue-500 {
+    color: hsl(var(--claude-accent));
+  }
+  .v2-settings-backdrop .bg-blue-50 {
+    background-color: hsl(var(--claude-accent) / 0.1);
+  }
+  .v2-settings-backdrop .text-blue-600 {
+    color: hsl(var(--claude-accent));
+  }
+  .v2-settings-backdrop .hover\:border-blue-400:hover {
+    border-color: hsl(var(--claude-accent) / 0.5);
+  }
+  .dark .v2-settings-backdrop .dark\:bg-blue-950\/50 {
+    background-color: hsl(var(--claude-accent) / 0.15);
+  }
+  .dark .v2-settings-backdrop .dark\:text-blue-400 {
+    color: hsl(var(--claude-accent));
+  }
+  .dark .v2-settings-backdrop .dark\:hover\:border-blue-500:hover {
+    border-color: hsl(var(--claude-accent) / 0.5);
+  }
+
+  @media (min-width: 768px) {
+    .v2-settings-backdrop {
+      background: hsl(var(--claude-bg) / 0.85);
+      backdrop-filter: blur(8px);
+      padding: 16px;
+    }
+  }
+
+  .v2-settings-shell {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    background: hsl(var(--claude-bg));
+  }
+
+  @media (min-width: 768px) {
+    .v2-settings-shell {
+      max-width: 640px;
+      max-height: 90vh;
+      border-radius: 16px;
+      border: 1px solid hsl(var(--claude-border));
+      box-shadow: var(--shadow-lg);
+    }
+  }
+
+  .v2-settings-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 1px solid hsl(var(--claude-border));
+    flex-shrink: 0;
+  }
+
+  @media (max-width: 767px) {
+    .v2-settings-header {
+      padding-top: max(12px, env(safe-area-inset-top));
+    }
+  }
+
+  .v2-settings-title {
+    font-size: 17px;
+    font-weight: 600;
+    color: hsl(var(--claude-text));
+  }
+
+  .v2-settings-save-status {
+    font-size: 12px;
+    color: hsl(var(--claude-text-muted));
+    animation: v2-fade-in 0.15s ease;
+  }
+
+  .v2-settings-tabs {
+    display: flex;
+    gap: 2px;
+    padding: 8px 12px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    border-bottom: 1px solid hsl(var(--claude-border));
+    flex-shrink: 0;
+  }
+
+  .v2-settings-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .v2-settings-tab {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+    color: hsl(var(--claude-text-secondary));
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .v2-settings-tab:hover {
+    background: hsl(var(--claude-tertiary));
+    color: hsl(var(--claude-text));
+  }
+
+  .v2-settings-tab-active {
+    background: hsl(var(--claude-elevated));
+    color: hsl(var(--claude-text));
+    box-shadow: var(--shadow-sm);
+  }
+
+  .v2-settings-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    padding-bottom: max(16px, env(safe-area-inset-bottom));
+  }
+
+  @media (min-width: 768px) {
+    .v2-settings-content {
+      padding: 24px;
+    }
+  }
+
+  .v2-settings-content-enter {
+    animation: v2-fade-in 0.15s ease;
+  }
+
+  @keyframes v2-fade-in {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .v2-select {
+    width: 100%;
+    padding: 10px 14px;
+    background: hsl(var(--claude-surface));
+    border: 1.5px solid hsl(var(--claude-border-default));
+    border-radius: var(--radius-lg);
+    font-size: 14px;
+    color: hsl(var(--claude-text));
+    outline: none;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    appearance: none;
+    cursor: pointer;
+  }
+
+  .v2-select:focus {
+    border-color: hsl(var(--claude-accent));
+    box-shadow: 0 0 0 3px hsl(var(--claude-accent) / 0.12);
+  }
 }

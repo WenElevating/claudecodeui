@@ -11,6 +11,8 @@ import type { InstallMode } from '../../../../hooks/useVersionCheck';
 import { normalizeProjectForSettings } from '../../utils/utils';
 import type { DeleteProjectConfirmation, SessionDeleteConfirmation, SettingsProject } from '../../types/types';
 import ProjectCreationWizard from '../../../project-creation-wizard';
+import { useUiVersion } from '../../../../hooks/useUiVersion';
+import SettingsV2 from '../../../settings/view/SettingsV2';
 
 type SidebarModalsProps = {
   projects: Project[];
@@ -70,6 +72,8 @@ export default function SidebarModals({
   installMode,
   t,
 }: SidebarModalsProps) {
+  const { useNewUi } = useUiVersion();
+
   // Settings expects project identity/path fields to be present for dropdown labels and local-scope MCP config.
   const settingsProjects = useMemo(
     () => projects.map(normalizeProjectForSettings),
@@ -89,12 +93,21 @@ export default function SidebarModals({
 
       {showSettings &&
         ReactDOM.createPortal(
-          <TypedSettings
-            isOpen={showSettings}
-            onClose={onCloseSettings}
-            projects={settingsProjects}
-            initialTab={settingsInitialTab}
-          />,
+          useNewUi ? (
+            <SettingsV2
+              isOpen={showSettings}
+              onClose={onCloseSettings}
+              projects={settingsProjects}
+              initialTab={settingsInitialTab}
+            />
+          ) : (
+            <TypedSettings
+              isOpen={showSettings}
+              onClose={onCloseSettings}
+              projects={settingsProjects}
+              initialTab={settingsInitialTab}
+            />
+          ),
           document.body,
         )}
 
