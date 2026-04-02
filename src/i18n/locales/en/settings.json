@@ -133,6 +133,13 @@
       "label": "Dark Mode",
       "description": "Toggle between light and dark themes"
     },
+    "uiDesign": {
+      "label": "UI Design",
+      "newUi": {
+        "label": "New UI Design (V2)",
+        "description": "Switch to the new Claude Code Mobile style UI design"
+      }
+    },
     "projectSorting": {
       "label": "Project Sorting",
       "description": "How projects are ordered in the sidebar",

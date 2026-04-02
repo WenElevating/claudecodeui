@@ -112,6 +112,13 @@
       "label": "Darkmode",
       "description": "Zwischen hellem und dunklem Design wechseln"
     },
+    "uiDesign": {
+      "label": "UI-Design",
+      "newUi": {
+        "label": "Neues UI-Design (V2)",
+        "description": "Zum neuen Claude Code Mobile-Stil wechseln"
+      }
+    },
     "projectSorting": {
       "label": "Projektsortierung",
       "description": "Wie Projekte in der Seitenleiste angeordnet werden",

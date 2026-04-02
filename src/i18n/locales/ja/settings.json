@@ -133,6 +133,13 @@
       "label": "ダークモード",
       "description": "ライトテーマとダークテーマを切り替えます"
     },
+    "uiDesign": {
+      "label": "UIデザイン",
+      "newUi": {
+        "label": "新しいUIデザイン (V2)",
+        "description": "新しいClaude Code MobileスタイルのUIデザインに切り替えます"
+      }
+    },
     "projectSorting": {
       "label": "プロジェクトの並び順",
       "description": "サイドバーでのプロジェクトの並び順を設定します",
