@@ -211,23 +211,149 @@ export const getTaskIndicatorStatus = (
 };
 
 /**
- * Extract short folder name from project display name or path
+ * Extract path parts from a project path
+ */
+const getPathParts = (path: string): string[] => {
+  return path.split(/[/\\]/).filter(Boolean);
+};
+
+/**
+ * Get the last folder name from a path
+ */
+const getLastFolderName = (path: string): string => {
+  const parts = getPathParts(path);
+  return parts[parts.length - 1] || path;
+};
+
+/**
+ * Calculate display names for all projects, adding parent prefixes when needed to distinguish duplicates.
+ * Returns a Map of project.name -> display name
+ *
  * Examples:
- *   "D:\\GithubProject\\claudecodeui" -> "claudecodeui"
- *   "/Users/user/projects/my-app" -> "my-app"
- *   "my-app" -> "my-app"
+ *   No duplicates: "my-app", "other-project"
+ *   With duplicates: "work/my-app", "personal/my-app"
+ */
+export const calculateProjectDisplayNames = (projects: Project[]): Map<string, string> => {
+  const result = new Map<string, string>();
+
+  // Build map of short name -> projects with that name
+  const shortNameToProjects = new Map<string, Project[]>();
+
+  for (const project of projects) {
+    const displayName = project.displayName || project.name;
+    const shortName = getLastFolderName(displayName);
+
+    if (!shortNameToProjects.has(shortName)) {
+      shortNameToProjects.set(shortName, []);
+    }
+    shortNameToProjects.get(shortName)!.push(project);
+  }
+
+  // For each short name, check if there are duplicates
+  for (const [shortName, projectsWithSameName] of shortNameToProjects) {
+    if (projectsWithSameName.length === 1) {
+      // No duplicates, use short name
+      result.set(projectsWithSameName[0].name, shortName);
+    } else {
+      // Has duplicates, need to distinguish with parent path
+      const pathPartsList = projectsWithSameName.map(project => {
+        const displayName = project.displayName || project.name;
+        return {
+          project,
+          parts: getPathParts(displayName),
+        };
+      });
+
+      // Calculate how many levels needed to distinguish
+      const distinguished = distinguishByPathLevels(pathPartsList);
+
+      for (const { project, displayName } of distinguished) {
+        result.set(project.name, displayName);
+      }
+    }
+  }
+
+  return result;
+};
+
+/**
+ * Distinguish projects by adding path levels until they're unique
+ */
+const distinguishByPathLevels = (
+  pathPartsList: Array<{ project: Project; parts: string[] }>
+): Array<{ project: Project; displayName: string }> => {
+  const result: Array<{ project: Project; displayName: string }> = [];
+  const maxDepth = Math.max(...pathPartsList.map(p => p.parts.length));
+
+  // Start with 1 level (just the folder name)
+  let levels = 1;
+  let displayNames = new Map<string, string[]>();
+
+  // Keep increasing levels until all are unique or we hit max depth
+  while (levels <= maxDepth) {
+    displayNames = new Map();
+    let allUnique = true;
+
+    for (const { project, parts } of pathPartsList) {
+      // Take last 'levels' parts
+      const startIdx = Math.max(0, parts.length - levels);
+      const displayParts = parts.slice(startIdx);
+      const displayName = displayParts.join('/');
+
+      if (!displayNames.has(displayName)) {
+        displayNames.set(displayName, []);
+      }
+      displayNames.get(displayName)!.push(project.name);
+
+      if (displayNames.get(displayName)!.length > 1) {
+        allUnique = false;
+      }
+    }
+
+    if (allUnique || levels === maxDepth) {
+      break;
+    }
+
+    levels++;
+  }
+
+  // Build result
+  for (const { project, parts } of pathPartsList) {
+    const startIdx = Math.max(0, parts.length - levels);
+    const displayParts = parts.slice(startIdx);
+    result.push({
+      project,
+      displayName: displayParts.join('/'),
+    });
+  }
+
+  return result;
+};
+
+/**
+ * Format path for secondary display, truncating long paths
+ * Examples:
+ *   "D:\\Users\\user\\projects\\my-app" -> ".../projects/my-app"
+ *   "/home/user/work/my-app" -> ".../work/my-app"
+ */
+export const formatPathForDisplay = (fullPath: string, maxParts: number = 3): string => {
+  const parts = getPathParts(fullPath);
+
+  if (parts.length <= maxParts) {
+    return fullPath;
+  }
+
+  // Keep only the last maxParts
+  const displayParts = parts.slice(-maxParts);
+  return '.../' + displayParts.join('/');
+};
+
+/**
+ * Extract short folder name from project display name or path (kept for backwards compatibility)
  */
 export const getProjectShortName = (project: Project): string => {
   const displayName = project.displayName || project.name;
-
-  // Check if it looks like a path (contains path separators)
-  if (displayName.includes('/') || displayName.includes('\\')) {
-    // Split by both forward and backslash, get the last non-empty part
-    const parts = displayName.split(/[/\\]/).filter(Boolean);
-    return parts[parts.length - 1] || displayName;
-  }
-
-  return displayName;
+  return getLastFolderName(displayName);
 };
 
 export const normalizeProjectForSettings = (project: Project): SettingsProject => {

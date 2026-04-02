@@ -4,12 +4,14 @@ import { Button } from '../../../../shared/view/ui';
 import { cn } from '../../../../lib/utils';
 import type { Project, ProjectSession, SessionProvider } from '../../../../types/app';
 import type { MCPServerStatus, SessionWithProvider } from '../../types/types';
-import { getTaskIndicatorStatus, getProjectShortName } from '../../utils/utils';
+import { getTaskIndicatorStatus } from '../../utils/utils';
 import TaskIndicator from './TaskIndicator';
 import SidebarProjectSessions from './SidebarProjectSessions';
 
 type SidebarProjectItemProps = {
   project: Project;
+  smartDisplayName: string;
+  formattedPath: string;
   selectedProject: Project | null;
   selectedSession: ProjectSession | null;
   isExpanded: boolean;
@@ -59,6 +61,8 @@ const getSessionCountDisplay = (sessions: SessionWithProvider[], hasMoreSessions
 
 export default function SidebarProjectItemV2({
   project,
+  smartDisplayName,
+  formattedPath,
   selectedProject,
   selectedSession,
   isExpanded,
@@ -97,8 +101,8 @@ export default function SidebarProjectItemV2({
   const hasMoreSessions = project.sessionMeta?.hasMore === true;
   const sessionCountDisplay = getSessionCountDisplay(sessions, hasMoreSessions);
   const taskStatus = getTaskIndicatorStatus(project, mcpServerStatus);
-  const shortName = getProjectShortName(project);
-  const showFullPath = shortName !== project.displayName && project.fullPath;
+  const fullPath = project.fullPath || project.path || '';
+  const showPath = formattedPath !== smartDisplayName && fullPath;
 
   const toggleProject = () => onToggleProject(project.name);
   const toggleStarProject = () => onToggleStarProject(project.name);
@@ -162,7 +166,7 @@ export default function SidebarProjectItemV2({
               ) : (
                 <>
                   <div className="flex items-center gap-2">
-                    <h3 className="v2-sidebar-item-title" title={project.fullPath || project.displayName}>{shortName}</h3>
+                    <h3 className="v2-sidebar-item-title" title={fullPath || project.displayName}>{smartDisplayName}</h3>
                     {tasksEnabled && (
                       <TaskIndicator status={taskStatus} size="xs" className="flex-shrink-0" />
                     )}
@@ -268,8 +272,8 @@ export default function SidebarProjectItemV2({
               ) : (
                 <>
                   <div className="flex items-center gap-2 min-w-0">
-                    <span className="truncate text-sm font-semibold text-gray-800 dark:text-gray-100" title={project.fullPath || project.displayName}>
-                      {shortName}
+                    <span className="truncate text-sm font-semibold text-gray-800 dark:text-gray-100" title={fullPath || project.displayName}>
+                      {smartDisplayName}
                     </span>
                     {tasksEnabled && (
                       <TaskIndicator status={taskStatus} size="xs" className="flex-shrink-0" />
@@ -277,9 +281,9 @@ export default function SidebarProjectItemV2({
                   </div>
                   <div className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1 min-w-0">
                     <span className="flex-shrink-0">{sessionCountDisplay}</span>
-                    {showFullPath && (
-                      <span className="opacity-60 truncate" title={project.fullPath}>
-                        • {project.fullPath}
+                    {showPath && (
+                      <span className="opacity-60 truncate" title={fullPath}>
+                        • {formattedPath}
                       </span>
                     )}
                   </div>

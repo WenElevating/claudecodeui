@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import type { TFunction } from 'i18next';
 import type { LoadingProgress, Project, ProjectSession, SessionProvider } from '../../../../types/app';
 import type {
@@ -7,6 +7,7 @@ import type {
   SessionWithProvider,
 } from '../../types/types';
 import { useUiVersion } from '../../../../hooks/useUiVersion';
+import { calculateProjectDisplayNames, formatPathForDisplay } from '../../utils/utils';
 import SidebarProjectItem from './SidebarProjectItem';
 import SidebarProjectItemV2 from './SidebarProjectItemV2';
 import SidebarProjectsState from './SidebarProjectsState';
@@ -96,6 +97,11 @@ export default function SidebarProjectList({
   const { useNewUi } = useUiVersion();
   const ProjectItemComponent = useNewUi ? SidebarProjectItemV2 : SidebarProjectItem;
 
+  // Calculate smart display names for projects (handles duplicates)
+  const projectDisplayNames = useMemo(() => {
+    return calculateProjectDisplayNames(filteredProjects);
+  }, [filteredProjects]);
+
   const state = (
     <SidebarProjectsState
       isLoading={isLoading}
@@ -121,44 +127,51 @@ export default function SidebarProjectList({
     <div className="pb-safe-area-inset-bottom md:space-y-1">
       {!showProjects
         ? state
-        : filteredProjects.map((project) => (
-            <ProjectItemComponent
-              key={project.name}
-              project={project}
-              selectedProject={selectedProject}
-              selectedSession={selectedSession}
-              isExpanded={expandedProjects.has(project.name)}
-              isDeleting={deletingProjects.has(project.name)}
-              isStarred={isProjectStarred(project.name)}
-              editingProject={editingProject}
-              editingName={editingName}
-              sessions={getProjectSessions(project)}
-              initialSessionsLoaded={initialSessionsLoaded.has(project.name)}
-              isLoadingSessions={Boolean(loadingSessions[project.name])}
-              currentTime={currentTime}
-              editingSession={editingSession}
-              editingSessionName={editingSessionName}
-              tasksEnabled={tasksEnabled}
-              mcpServerStatus={mcpServerStatus}
-              onEditingNameChange={onEditingNameChange}
-              onToggleProject={onToggleProject}
-              onProjectSelect={onProjectSelect}
-              onToggleStarProject={onToggleStarProject}
-              onStartEditingProject={onStartEditingProject}
-              onCancelEditingProject={onCancelEditingProject}
-              onSaveProjectName={onSaveProjectName}
-              onDeleteProject={onDeleteProject}
-              onSessionSelect={onSessionSelect}
-              onDeleteSession={onDeleteSession}
-              onLoadMoreSessions={onLoadMoreSessions}
-              onNewSession={onNewSession}
-              onEditingSessionNameChange={onEditingSessionNameChange}
-              onStartEditingSession={onStartEditingSession}
-              onCancelEditingSession={onCancelEditingSession}
-              onSaveEditingSession={onSaveEditingSession}
-              t={t}
-            />
-          ))}
+        : filteredProjects.map((project) => {
+            const smartDisplayName = projectDisplayNames.get(project.name) || project.displayName;
+            const formattedPath = formatPathForDisplay(project.fullPath || project.path || '');
+
+            return (
+              <ProjectItemComponent
+                key={project.name}
+                project={project}
+                smartDisplayName={smartDisplayName}
+                formattedPath={formattedPath}
+                selectedProject={selectedProject}
+                selectedSession={selectedSession}
+                isExpanded={expandedProjects.has(project.name)}
+                isDeleting={deletingProjects.has(project.name)}
+                isStarred={isProjectStarred(project.name)}
+                editingProject={editingProject}
+                editingName={editingName}
+                sessions={getProjectSessions(project)}
+                initialSessionsLoaded={initialSessionsLoaded.has(project.name)}
+                isLoadingSessions={Boolean(loadingSessions[project.name])}
+                currentTime={currentTime}
+                editingSession={editingSession}
+                editingSessionName={editingSessionName}
+                tasksEnabled={tasksEnabled}
+                mcpServerStatus={mcpServerStatus}
+                onEditingNameChange={onEditingNameChange}
+                onToggleProject={onToggleProject}
+                onProjectSelect={onProjectSelect}
+                onToggleStarProject={onToggleStarProject}
+                onStartEditingProject={onStartEditingProject}
+                onCancelEditingProject={onCancelEditingProject}
+                onSaveProjectName={onSaveProjectName}
+                onDeleteProject={onDeleteProject}
+                onSessionSelect={onSessionSelect}
+                onDeleteSession={onDeleteSession}
+                onLoadMoreSessions={onLoadMoreSessions}
+                onNewSession={onNewSession}
+                onEditingSessionNameChange={onEditingSessionNameChange}
+                onStartEditingSession={onStartEditingSession}
+                onCancelEditingSession={onCancelEditingSession}
+                onSaveEditingSession={onSaveEditingSession}
+                t={t}
+              />
+            );
+          })}
     </div>
   );
 }
