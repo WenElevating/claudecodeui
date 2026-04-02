@@ -32,6 +32,8 @@
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "lint": "eslint src/",
     "lint:fix": "eslint src/ --fix",
+    "test:structure": "node tests/structure/architecture.test.js",
+    "check": "npm run lint && npm run typecheck && npm run test:structure",
     "start": "npm run build && npm run server",
     "release": "./release.sh",
     "prepublishOnly": "npm run build",
