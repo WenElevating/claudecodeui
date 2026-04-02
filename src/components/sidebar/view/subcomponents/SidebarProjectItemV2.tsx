@@ -4,7 +4,7 @@ import { Button } from '../../../../shared/view/ui';
 import { cn } from '../../../../lib/utils';
 import type { Project, ProjectSession, SessionProvider } from '../../../../types/app';
 import type { MCPServerStatus, SessionWithProvider } from '../../types/types';
-import { getTaskIndicatorStatus } from '../../utils/utils';
+import { getTaskIndicatorStatus, getProjectShortName } from '../../utils/utils';
 import TaskIndicator from './TaskIndicator';
 import SidebarProjectSessions from './SidebarProjectSessions';
 
@@ -97,6 +97,8 @@ export default function SidebarProjectItemV2({
   const hasMoreSessions = project.sessionMeta?.hasMore === true;
   const sessionCountDisplay = getSessionCountDisplay(sessions, hasMoreSessions);
   const taskStatus = getTaskIndicatorStatus(project, mcpServerStatus);
+  const shortName = getProjectShortName(project);
+  const showFullPath = shortName !== project.displayName && project.fullPath;
 
   const toggleProject = () => onToggleProject(project.name);
   const toggleStarProject = () => onToggleStarProject(project.name);
@@ -160,7 +162,7 @@ export default function SidebarProjectItemV2({
               ) : (
                 <>
                   <div className="flex items-center gap-2">
-                    <h3 className="v2-sidebar-item-title">{project.displayName}</h3>
+                    <h3 className="v2-sidebar-item-title" title={project.fullPath || project.displayName}>{shortName}</h3>
                     {tasksEnabled && (
                       <TaskIndicator status={taskStatus} size="xs" className="flex-shrink-0" />
                     )}
@@ -266,8 +268,8 @@ export default function SidebarProjectItemV2({
               ) : (
                 <>
                   <div className="flex items-center gap-2 min-w-0">
-                    <span className="truncate text-sm font-semibold text-gray-800 dark:text-gray-100">
-                      {project.displayName}
+                    <span className="truncate text-sm font-semibold text-gray-800 dark:text-gray-100" title={project.fullPath || project.displayName}>
+                      {shortName}
                     </span>
                     {tasksEnabled && (
                       <TaskIndicator status={taskStatus} size="xs" className="flex-shrink-0" />
@@ -275,7 +277,7 @@ export default function SidebarProjectItemV2({
                   </div>
                   <div className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1 min-w-0">
                     <span className="flex-shrink-0">{sessionCountDisplay}</span>
-                    {project.fullPath !== project.displayName && (
+                    {showFullPath && (
                       <span className="opacity-60 truncate" title={project.fullPath}>
                         • {project.fullPath}
                       </span>

@@ -3,9 +3,9 @@ import { useUiPreferences } from '../../../hooks/useUiPreferences';
 const loadingDotAnimationDelays = ['0s', '0.16s', '0.32s'];
 
 export default function AuthLoadingScreen() {
-  const { useNewUi } = useUiPreferences();
+  const { preferences } = useUiPreferences();
 
-  if (useNewUi) {
+  if (preferences.useNewUi) {
     return <V2LoadingScreen />;
   }
 

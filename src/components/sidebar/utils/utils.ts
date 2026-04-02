@@ -210,6 +210,26 @@ export const getTaskIndicatorStatus = (
   return 'not-configured';
 };
 
+/**
+ * Extract short folder name from project display name or path
+ * Examples:
+ *   "D:\\GithubProject\\claudecodeui" -> "claudecodeui"
+ *   "/Users/user/projects/my-app" -> "my-app"
+ *   "my-app" -> "my-app"
+ */
+export const getProjectShortName = (project: Project): string => {
+  const displayName = project.displayName || project.name;
+
+  // Check if it looks like a path (contains path separators)
+  if (displayName.includes('/') || displayName.includes('\\')) {
+    // Split by both forward and backslash, get the last non-empty part
+    const parts = displayName.split(/[/\\]/).filter(Boolean);
+    return parts[parts.length - 1] || displayName;
+  }
+
+  return displayName;
+};
+
 export const normalizeProjectForSettings = (project: Project): SettingsProject => {
   const fallbackPath =
     typeof project.fullPath === 'string' && project.fullPath.length > 0
