@@ -68,13 +68,13 @@ export default function MobileNavV2({ activeTab, setActiveTab, isInputFocused }:
   };
 
   const baseCoreItems: CoreNavItem[] = [
-    { id: 'chat', icon: MessageSquare, label: 'Chat' },
-    { id: 'shell', icon: Terminal, label: 'Shell' },
-    { id: 'files', icon: Folder, label: 'Files' },
-    { id: 'git', icon: GitBranch, label: 'Git' },
+    { id: 'chat', icon: MessageSquare, label: t('common:tabs.chat') },
+    { id: 'shell', icon: Terminal, label: t('common:tabs.shell') },
+    { id: 'files', icon: Folder, label: t('common:tabs.files') },
+    { id: 'git', icon: GitBranch, label: t('common:tabs.git') },
   ];
   const coreItems: CoreNavItem[] = shouldShowTasksTab
-    ? [...baseCoreItems, { id: 'tasks', icon: ClipboardCheck, label: 'Tasks' }]
+    ? [...baseCoreItems, { id: 'tasks', icon: ClipboardCheck, label: t('common:tabs.tasks') }]
     : baseCoreItems;
 
   return (
@@ -147,7 +147,7 @@ export default function MobileNavV2({ activeTab, setActiveTab, isInputFocused }:
                 className={`relative flex w-full touch-manipulation flex-col items-center justify-center gap-1 rounded-xl px-2 py-2 transition-all duration-200 ${
                   (isPluginActive || moreOpen) ? 'scale-105' : 'active:scale-95'
                 }`}
-                aria-label="More plugins"
+                aria-label={t('settings:pluginSettings.morePlugins')}
                 aria-expanded={moreOpen}
               >
                 {(isPluginActive && !moreOpen) && (
