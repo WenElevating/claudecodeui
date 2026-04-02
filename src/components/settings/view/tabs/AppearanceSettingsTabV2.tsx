@@ -12,22 +12,14 @@ type AppearanceSettingsTabV2Props = {
   projectSortOrder: ProjectSortOrder;
   onProjectSortOrderChange: (value: ProjectSortOrder) => void;
   codeEditorSettings: CodeEditorSettingsState;
-  onCodeEditorThemeChange: (value: 'dark' | 'light') => void;
-  onCodeEditorWordWrapChange: (value: boolean) => void;
-  onCodeEditorShowMinimapChange: (value: boolean) => void;
-  onCodeEditorLineNumbersChange: (value: boolean) => void;
-  onCodeEditorFontSizeChange: (value: string) => void;
+  onCodeEditorSettingChange: <K extends keyof CodeEditorSettingsState>(key: K, value: CodeEditorSettingsState[K]) => void;
 };
 
 export default function AppearanceSettingsTabV2({
   projectSortOrder,
   onProjectSortOrderChange,
   codeEditorSettings,
-  onCodeEditorThemeChange,
-  onCodeEditorWordWrapChange,
-  onCodeEditorShowMinimapChange,
-  onCodeEditorLineNumbersChange,
-  onCodeEditorFontSizeChange,
+  onCodeEditorSettingChange,
 }: AppearanceSettingsTabV2Props) {
   const { t } = useTranslation('settings');
   const { useNewUi, setUseNewUi } = useUiVersion();
@@ -92,7 +84,7 @@ export default function AppearanceSettingsTabV2({
           >
             <DarkModeToggle
               checked={codeEditorSettings.theme === 'dark'}
-              onToggle={(enabled) => onCodeEditorThemeChange(enabled ? 'dark' : 'light')}
+              onToggle={(enabled) => onCodeEditorSettingChange('theme', enabled ? 'dark' : 'light')}
               ariaLabel={t('appearanceSettings.codeEditor.theme.label')}
             />
           </SettingsRowV2>
@@ -103,7 +95,7 @@ export default function AppearanceSettingsTabV2({
           >
             <SettingsToggleV2
               checked={codeEditorSettings.wordWrap}
-              onChange={onCodeEditorWordWrapChange}
+              onChange={(value) => onCodeEditorSettingChange('wordWrap', value)}
               ariaLabel={t('appearanceSettings.codeEditor.wordWrap.label')}
             />
           </SettingsRowV2>
@@ -114,7 +106,7 @@ export default function AppearanceSettingsTabV2({
           >
             <SettingsToggleV2
               checked={codeEditorSettings.showMinimap}
-              onChange={onCodeEditorShowMinimapChange}
+              onChange={(value) => onCodeEditorSettingChange('showMinimap', value)}
               ariaLabel={t('appearanceSettings.codeEditor.showMinimap.label')}
             />
           </SettingsRowV2>
@@ -125,7 +117,7 @@ export default function AppearanceSettingsTabV2({
           >
             <SettingsToggleV2
               checked={codeEditorSettings.lineNumbers}
-              onChange={onCodeEditorLineNumbersChange}
+              onChange={(value) => onCodeEditorSettingChange('lineNumbers', value)}
               ariaLabel={t('appearanceSettings.codeEditor.lineNumbers.label')}
             />
           </SettingsRowV2>
@@ -136,7 +128,7 @@ export default function AppearanceSettingsTabV2({
           >
             <select
               value={codeEditorSettings.fontSize}
-              onChange={(event) => onCodeEditorFontSizeChange(event.target.value)}
+              onChange={(event) => onCodeEditorSettingChange('fontSize', event.target.value)}
               className="v2-select w-full sm:w-28"
             >
               <option value="10">10px</option>

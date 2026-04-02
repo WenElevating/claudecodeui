@@ -117,13 +117,13 @@ function SettingsV2({ isOpen, onClose, projects = [], initialTab = 'agents' }: S
     return null;
   }
 
-  const isAuthenticated = loginProvider === 'claude'
-    ? claudeAuthStatus.authenticated
-    : loginProvider === 'cursor'
-      ? cursorAuthStatus.authenticated
-      : loginProvider === 'codex'
-        ? codexAuthStatus.authenticated
-        : false;
+  const authStatusMap: Record<string, { authenticated: boolean }> = {
+    claude: claudeAuthStatus,
+    cursor: cursorAuthStatus,
+    codex: codexAuthStatus,
+    gemini: geminiAuthStatus,
+  };
+  const isAuthenticated = authStatusMap[loginProvider ?? '']?.authenticated ?? false;
 
   return (
     <div className="v2-settings-backdrop">
@@ -202,11 +202,7 @@ function SettingsV2({ isOpen, onClose, projects = [], initialTab = 'agents' }: S
                 projectSortOrder={projectSortOrder}
                 onProjectSortOrderChange={setProjectSortOrder}
                 codeEditorSettings={codeEditorSettings}
-                onCodeEditorThemeChange={(value) => updateCodeEditorSetting('theme', value)}
-                onCodeEditorWordWrapChange={(value) => updateCodeEditorSetting('wordWrap', value)}
-                onCodeEditorShowMinimapChange={(value) => updateCodeEditorSetting('showMinimap', value)}
-                onCodeEditorLineNumbersChange={(value) => updateCodeEditorSetting('lineNumbers', value)}
-                onCodeEditorFontSizeChange={(value) => updateCodeEditorSetting('fontSize', value)}
+                onCodeEditorSettingChange={updateCodeEditorSetting}
               />
             )}
 

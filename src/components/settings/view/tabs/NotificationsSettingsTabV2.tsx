@@ -2,8 +2,17 @@ import { BellOff, BellRing, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { NotificationPreferencesState } from '../../types/types';
 import SettingsCardV2 from '../v2/SettingsCardV2';
+import SettingsRowV2 from '../v2/SettingsRowV2';
 import SettingsSectionV2 from '../v2/SettingsSectionV2';
 import SettingsToggleV2 from '../v2/SettingsToggleV2';
+
+type EventKey = 'actionRequired' | 'stop' | 'error';
+
+const EVENT_KEYS: { key: EventKey; labelKey: string }[] = [
+  { key: 'actionRequired', labelKey: 'notifications.events.actionRequired' },
+  { key: 'stop', labelKey: 'notifications.events.stop' },
+  { key: 'error', labelKey: 'notifications.events.error' },
+];
 
 type NotificationsSettingsTabV2Props = {
   notificationPreferences: NotificationPreferencesState;
@@ -29,6 +38,13 @@ export default function NotificationsSettingsTabV2({
   const pushSupported = pushPermission !== 'unsupported';
   const pushDenied = pushPermission === 'denied';
 
+  const handleEventChange = (key: EventKey, checked: boolean) => {
+    onNotificationPreferencesChange({
+      ...notificationPreferences,
+      events: { ...notificationPreferences.events, [key]: checked },
+    });
+  };
+
   return (
     <div className="space-y-8">
       <SettingsSectionV2 title={t('notifications.title')}>
@@ -46,13 +62,7 @@ export default function NotificationsSettingsTabV2({
                 <button
                   type="button"
                   disabled={isPushLoading}
-                  onClick={() => {
-                    if (isPushSubscribed) {
-                      onDisablePush();
-                    } else {
-                      onEnablePush();
-                    }
-                  }}
+                  onClick={isPushSubscribed ? onDisablePush : onEnablePush}
                   className={`inline-flex items-center gap-2 rounded-[10px] px-4 py-2 text-sm font-medium transition-all duration-150 disabled:cursor-not-allowed disabled:opacity-50 ${
                     isPushSubscribed
                       ? 'v2-btn v2-btn-secondary !text-red-600 dark:!text-red-400'
@@ -82,53 +92,19 @@ export default function NotificationsSettingsTabV2({
           </div>
         </SettingsCardV2>
 
-        <SettingsCardV2>
-          <div className="space-y-4 p-5">
+        <SettingsCardV2 divided>
+          <div className="p-5 pb-2">
             <h4 className="font-medium text-[hsl(var(--claude-text))]">{t('notifications.events.title')}</h4>
-            <div className="space-y-1">
-              <div className="flex items-center justify-between px-0 py-3">
-                <span className="text-sm text-[hsl(var(--claude-text))]">{t('notifications.events.actionRequired')}</span>
-                <SettingsToggleV2
-                  checked={notificationPreferences.events.actionRequired}
-                  onChange={(checked) =>
-                    onNotificationPreferencesChange({
-                      ...notificationPreferences,
-                      events: { ...notificationPreferences.events, actionRequired: checked },
-                    })
-                  }
-                  ariaLabel={t('notifications.events.actionRequired')}
-                />
-              </div>
-
-              <div className="flex items-center justify-between px-0 py-3">
-                <span className="text-sm text-[hsl(var(--claude-text))]">{t('notifications.events.stop')}</span>
-                <SettingsToggleV2
-                  checked={notificationPreferences.events.stop}
-                  onChange={(checked) =>
-                    onNotificationPreferencesChange({
-                      ...notificationPreferences,
-                      events: { ...notificationPreferences.events, stop: checked },
-                    })
-                  }
-                  ariaLabel={t('notifications.events.stop')}
-                />
-              </div>
-
-              <div className="flex items-center justify-between px-0 py-3">
-                <span className="text-sm text-[hsl(var(--claude-text))]">{t('notifications.events.error')}</span>
-                <SettingsToggleV2
-                  checked={notificationPreferences.events.error}
-                  onChange={(checked) =>
-                    onNotificationPreferencesChange({
-                      ...notificationPreferences,
-                      events: { ...notificationPreferences.events, error: checked },
-                    })
-                  }
-                  ariaLabel={t('notifications.events.error')}
-                />
-              </div>
-            </div>
           </div>
+          {EVENT_KEYS.map(({ key, labelKey }) => (
+            <SettingsRowV2 key={key} label={t(labelKey)}>
+              <SettingsToggleV2
+                checked={notificationPreferences.events[key]}
+                onChange={(checked) => handleEventChange(key, checked)}
+                ariaLabel={t(labelKey)}
+              />
+            </SettingsRowV2>
+          ))}
         </SettingsCardV2>
       </SettingsSectionV2>
     </div>

@@ -2186,7 +2186,9 @@
     --card-foreground: var(--claude-text);
   }
 
-  /* Plugin section: override hardcoded blue to V2 amber accent */
+  /* Plugin section: override hardcoded blue in PluginSettingsTab to match V2 amber accent.
+     These target specific Tailwind utility classes used by PluginSettingsTab's
+     StarterPluginCard, TerminalPluginCard, and install button. */
   .v2-settings-backdrop .bg-blue-600 {
     background-color: hsl(var(--claude-accent));
   }
