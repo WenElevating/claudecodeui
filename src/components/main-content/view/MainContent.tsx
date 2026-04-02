@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import ChatInterface from '../../chat/view/ChatInterface';
 import FileTree from '../../file-tree/view/FileTree';
+import FileTreeV2 from '../../file-tree/view/v2/FileTreeV2';
 import StandaloneShell from '../../standalone-shell/view/StandaloneShell';
 import GitPanel from '../../git-panel/view/GitPanel';
 import PluginTabContent from '../../plugins/view/PluginTabContent';
@@ -142,7 +143,11 @@ function MainContent({
 
           {activeTab === 'files' && (
             <div className="h-full overflow-hidden">
-              <FileTree selectedProject={selectedProject} onFileOpen={handleFileOpen} />
+              {useNewUi ? (
+                <FileTreeV2 selectedProject={selectedProject} onFileOpen={handleFileOpen} />
+              ) : (
+                <FileTree selectedProject={selectedProject} onFileOpen={handleFileOpen} />
+              )}
             </div>
           )}
 
