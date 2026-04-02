@@ -309,6 +309,18 @@ export function useChatSessionState({
   // Main session loading effect — store-based
   useEffect(() => {
     if (!selectedSession || !selectedProject) {
+      // Don't reset if we have a pending session being created (currentSessionId starts with 'new-session-')
+      // or if we just received a session_created event and the session data hasn't propagated yet
+      const hasPendingSession = currentSessionId && (
+        currentSessionId.startsWith('new-session-') ||
+        sessionStorage.getItem('pendingSessionId')
+      );
+
+      if (hasPendingSession) {
+        // Keep the current session ID alive until the session data is available
+        return;
+      }
+
       resetStreamingState();
       pendingViewSessionRef.current = null;
       setClaudeStatus(null);
@@ -363,6 +375,9 @@ export function useChatSessionState({
     if (provider === 'cursor') {
       sessionStorage.setItem('cursorSessionId', selectedSession.id);
     }
+
+    // Clear pending session ID now that we have a valid selectedSession
+    sessionStorage.removeItem('pendingSessionId');
 
     // Check session status
     if (ws) {

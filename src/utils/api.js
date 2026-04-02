@@ -15,8 +15,14 @@ export const authenticatedFetch = (url, options = {}) => {
     defaultHeaders['Authorization'] = `Bearer ${token}`;
   }
 
+  // Default to no-cache for GET requests to ensure fresh data
+  const defaultCache = options.method === 'POST' || options.method === 'PUT' || options.method === 'DELETE'
+    ? undefined
+    : 'no-store';
+
   return fetch(url, {
     ...options,
+    cache: options.cache || defaultCache,
     headers: {
       ...defaultHeaders,
       ...options.headers,

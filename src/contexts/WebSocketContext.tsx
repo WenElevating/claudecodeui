@@ -102,8 +102,6 @@ const useWebSocketProviderState = (): WebSocketContextType => {
     const socket = wsRef.current;
     if (socket && socket.readyState === WebSocket.OPEN) {
       socket.send(JSON.stringify(message));
-    } else {
-      console.warn('WebSocket not connected');
     }
   }, []);
 

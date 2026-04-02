@@ -6,6 +6,7 @@ import SettingsCard from '../SettingsCard';
 import SettingsRow from '../SettingsRow';
 import SettingsSection from '../SettingsSection';
 import SettingsToggle from '../SettingsToggle';
+import { useUiVersion } from '../../../../hooks/useUiVersion';
 
 type AppearanceSettingsTabProps = {
   projectSortOrder: ProjectSortOrder;
@@ -29,9 +30,25 @@ export default function AppearanceSettingsTab({
   onCodeEditorFontSizeChange,
 }: AppearanceSettingsTabProps) {
   const { t } = useTranslation('settings');
+  const { useNewUi, setUseNewUi } = useUiVersion();
 
   return (
     <div className="space-y-8">
+      <SettingsSection title={t('appearanceSettings.uiDesign.label') || 'UI Design'}>
+        <SettingsCard>
+          <SettingsRow
+            label={t('appearanceSettings.uiDesign.newUi.label') || 'New UI Design (V2)'}
+            description={t('appearanceSettings.uiDesign.newUi.description') || 'Switch to the new Claude Code Mobile style UI design'}
+          >
+            <SettingsToggle
+              checked={useNewUi}
+              onChange={setUseNewUi}
+              ariaLabel="New UI Design"
+            />
+          </SettingsRow>
+        </SettingsCard>
+      </SettingsSection>
+
       <SettingsSection title={t('appearanceSettings.darkMode.label')}>
         <SettingsCard>
           <SettingsRow

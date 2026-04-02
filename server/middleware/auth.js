@@ -6,14 +6,15 @@ import { IS_PLATFORM } from '../constants/config.js';
 const JWT_SECRET = process.env.JWT_SECRET || appConfigDb.getOrCreateJwtSecret();
 
 // Optional API key middleware
+// Use CLOUDCLI_API_KEY to avoid conflicts with user's system API_KEY variable
 const validateApiKey = (req, res, next) => {
   // Skip API key validation if not configured
-  if (!process.env.API_KEY) {
+  if (!process.env.CLOUDCLI_API_KEY) {
     return next();
   }
-  
+
   const apiKey = req.headers['x-api-key'];
-  if (apiKey !== process.env.API_KEY) {
+  if (apiKey !== process.env.CLOUDCLI_API_KEY) {
     return res.status(401).json({ error: 'Invalid API key' });
   }
   next();

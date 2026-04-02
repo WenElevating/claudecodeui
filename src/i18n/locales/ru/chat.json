@@ -12,7 +12,7 @@
     "copyAsText": "Копировать как текст"
   },
   "messageTypes": {
-    "user": "П",
+    "user": "Вы",
     "error": "Ошибка",
     "tool": "Инструмент",
     "claude": "Claude",
@@ -61,7 +61,7 @@
   },
   "thinking": {
     "title": "Думаю...",
-    "emoji": "💭 Думаю..."
+    "emoji": "Думаю..."
   },
   "json": {
     "response": "JSON ответ"

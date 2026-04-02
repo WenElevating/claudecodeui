@@ -12,7 +12,7 @@
     "copyAsText": "텍스트로 복사"
   },
   "messageTypes": {
-    "user": "U",
+    "user": "나",
     "error": "오류",
     "tool": "도구",
     "claude": "Claude",
@@ -61,7 +61,7 @@
   },
   "thinking": {
     "title": "생각 중...",
-    "emoji": "💭 생각 중..."
+    "emoji": "생각 중..."
   },
   "json": {
     "response": "JSON 응답"

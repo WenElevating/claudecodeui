@@ -466,6 +466,16 @@ async function loadMcpConfig(cwd) {
  * @returns {Promise<void>}
  */
 async function queryClaudeSDK(command, options = {}, ws) {
+  console.log('[SDK] queryClaudeSDK called');
+  console.log('[SDK] command:', command?.substring(0, 100));
+  console.log('[SDK] options:', JSON.stringify({
+    sessionId: options?.sessionId,
+    cwd: options?.cwd,
+    projectPath: options?.projectPath,
+    model: options?.model,
+    permissionMode: options?.permissionMode
+  }, null, 2));
+
   const { sessionId, sessionSummary } = options;
   let capturedSessionId = sessionId;
   let sessionCreatedSent = false;
@@ -692,6 +702,13 @@ async function queryClaudeSDK(command, options = {}, ws) {
 
   } catch (error) {
     console.error('SDK query error:', error);
+    console.error('Error stack:', error?.stack);
+    console.error('Options:', JSON.stringify({
+      cwd: options?.cwd,
+      sessionId: options?.sessionId,
+      model: options?.model,
+      permissionMode: options?.permissionMode
+    }, null, 2));
 
     // Clean up session on error
     if (capturedSessionId) {

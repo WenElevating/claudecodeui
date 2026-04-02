@@ -5,8 +5,10 @@ import type { ChatMessage } from '../../types/types';
 import type { Project, ProjectSession, SessionProvider } from '../../../../types/app';
 import { getIntrinsicMessageKey } from '../../utils/messageKeys';
 import MessageComponent from './MessageComponent';
+import MessageComponentV2 from './MessageComponentV2';
 import ProviderSelectionEmptyState from './ProviderSelectionEmptyState';
 import AssistantThinkingIndicator from './AssistantThinkingIndicator';
+import { useUiVersion } from '../../../../hooks/useUiVersion';
 
 interface ChatMessagesPaneProps {
   scrollContainerRef: RefObject<HTMLDivElement>;
@@ -100,6 +102,7 @@ export default function ChatMessagesPane({
   isLoading,
 }: ChatMessagesPaneProps) {
   const { t } = useTranslation('chat');
+  const { useNewUi } = useUiVersion();
   const messageKeyMapRef = useRef<WeakMap<ChatMessage, string>>(new WeakMap());
   const allocatedKeysRef = useRef<Set<string>>(new Set());
   const generatedMessageKeyCounterRef = useRef(0);
@@ -133,7 +136,7 @@ export default function ChatMessagesPane({
       ref={scrollContainerRef}
       onWheel={onWheel}
       onTouchMove={onTouchMove}
-      className="relative flex-1 space-y-3 overflow-y-auto overflow-x-hidden px-0 py-3 sm:space-y-4 sm:p-4"
+      className={`relative flex-1 overflow-y-auto ${useNewUi ? 'v2-app-bg space-y-0 px-4 py-4' : 'space-y-3 px-0 py-3 sm:space-y-4 sm:p-4'}`}
     >
       {isLoadingSessionMessages && chatMessages.length === 0 ? (
         <div className="mt-8 text-center text-gray-500 dark:text-gray-400">
@@ -242,8 +245,9 @@ export default function ChatMessagesPane({
 
           {visibleMessages.map((message, index) => {
             const prevMessage = index > 0 ? visibleMessages[index - 1] : null;
+            const MessageComp = useNewUi ? MessageComponentV2 : MessageComponent;
             return (
-              <MessageComponent
+              <MessageComp
                 key={getMessageKey(message)}
                 message={message}
                 prevMessage={prevMessage}

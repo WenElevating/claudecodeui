@@ -48,6 +48,7 @@ function MainContent({
   onNavigateToSession,
   onShowSettings,
   externalMessageUpdate,
+  useNewUi,
 }: MainContentProps) {
   const { preferences } = useUiPreferences();
   const { autoExpandTools, showRawParameters, showThinking, autoScrollToBottom, sendByCtrlEnter } = preferences;
@@ -134,6 +135,7 @@ function MainContent({
                 sendByCtrlEnter={sendByCtrlEnter}
                 externalMessageUpdate={externalMessageUpdate}
                 onShowAllTasks={tasksEnabled ? () => setActiveTab('tasks') : null}
+                useNewUi={useNewUi}
               />
             </ErrorBoundary>
           </div>

@@ -3,7 +3,10 @@ import type { TFunction } from 'i18next';
 import { Button } from '../../../../shared/view/ui';
 import type { Project, ProjectSession, SessionProvider } from '../../../../types/app';
 import type { SessionWithProvider } from '../../types/types';
+import { useUiVersion } from '../../../../hooks/useUiVersion';
+import { cn } from '../../../../lib/utils';
 import SidebarSessionItem from './SidebarSessionItem';
+import SidebarSessionItemV2 from './SidebarSessionItemV2';
 
 type SidebarProjectSessionsProps = {
   project: Project;
@@ -71,6 +74,9 @@ export default function SidebarProjectSessions({
   onNewSession,
   t,
 }: SidebarProjectSessionsProps) {
+  const { useNewUi } = useUiVersion();
+  const SessionItemComponent = useNewUi ? SidebarSessionItemV2 : SidebarSessionItem;
+
   if (!isExpanded) {
     return null;
   }
@@ -79,10 +85,18 @@ export default function SidebarProjectSessions({
   const hasMoreSessions = project.sessionMeta?.hasMore === true;
 
   return (
-    <div className="ml-3 space-y-1 border-l border-border pl-3">
+    <div className={cn(
+      'ml-3 space-y-1 pl-3',
+      useNewUi ? 'border-l border-amber-200/50' : 'border-l border-border'
+    )}>
       <div className="px-3 pb-1 pt-1 md:hidden">
         <button
-          className="flex h-8 w-full items-center justify-center gap-2 rounded-md bg-primary text-xs font-medium text-primary-foreground transition-all duration-150 hover:bg-primary/90 active:scale-[0.98]"
+          className={cn(
+            "flex h-8 w-full items-center justify-center gap-2 rounded-lg text-xs font-medium transition-all duration-150 active:scale-[0.98]",
+            useNewUi
+              ? "bg-amber-500 text-white hover:bg-amber-600"
+              : "bg-primary text-primary-foreground hover:bg-primary/90"
+          )}
           onClick={() => {
             onProjectSelect(project);
             onNewSession(project);
@@ -96,7 +110,10 @@ export default function SidebarProjectSessions({
       <Button
         variant="default"
         size="sm"
-        className="hidden h-8 w-full justify-start gap-2 bg-primary text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90 md:flex"
+        className={cn(
+          "hidden h-8 w-full justify-start gap-2 text-xs font-medium transition-colors md:flex",
+          useNewUi && "bg-amber-500 text-white hover:bg-amber-600"
+        )}
         onClick={() => onNewSession(project)}
       >
         <Plus className="h-3 w-3" />
@@ -111,7 +128,7 @@ export default function SidebarProjectSessions({
         </div>
       ) : (
         sessions.map((session) => (
-          <SidebarSessionItem
+          <SessionItemComponent
             key={session.id}
             project={project}
             session={session}

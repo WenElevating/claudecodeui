@@ -28,6 +28,11 @@ const router = express.Router();
  */
 router.get('/:sessionId/messages', async (req, res) => {
   try {
+    // Prevent caching of session messages - they can change dynamically
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+
     const { sessionId } = req.params;
     const provider = req.query.provider || 'claude';
     const projectName = req.query.projectName || '';

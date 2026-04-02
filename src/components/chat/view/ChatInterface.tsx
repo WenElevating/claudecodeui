@@ -9,8 +9,10 @@ import { useChatSessionState } from '../hooks/useChatSessionState';
 import { useChatRealtimeHandlers } from '../hooks/useChatRealtimeHandlers';
 import { useChatComposerState } from '../hooks/useChatComposerState';
 import { useSessionStore } from '../../../stores/useSessionStore';
+import { useUiVersion } from '../../../hooks/useUiVersion';
 import ChatMessagesPane from './subcomponents/ChatMessagesPane';
 import ChatComposer from './subcomponents/ChatComposer';
+import ChatComposerV2 from './subcomponents/ChatComposerV2';
 
 
 type PendingViewSession = {
@@ -41,9 +43,12 @@ function ChatInterface({
   sendByCtrlEnter,
   externalMessageUpdate,
   onShowAllTasks,
+  useNewUi: useNewUiProp,
 }: ChatInterfaceProps) {
   const { tasksEnabled, isTaskMasterInstalled } = useTasksSettings();
   const { t } = useTranslation('chat');
+  const { useNewUi: useNewUiFromHook } = useUiVersion();
+  const useNewUi = useNewUiProp ?? useNewUiFromHook;
 
   const sessionStore = useSessionStore();
   const streamBufferRef = useRef('');
@@ -174,6 +179,7 @@ function ChatInterface({
     selectedProject,
     selectedSession,
     currentSessionId,
+    setCurrentSessionId,
     provider,
     permissionMode,
     cyclePermissionMode,
@@ -341,7 +347,8 @@ function ChatInterface({
           isLoading={isLoading}
         />
 
-        <ChatComposer
+        {useNewUi ? (
+          <ChatComposerV2
           pendingPermissionRequests={pendingPermissionRequests}
           handlePermissionDecision={handlePermissionDecision}
           handleGrantToolPermission={handleGrantToolPermission}
@@ -409,7 +416,78 @@ function ChatInterface({
           isTextareaExpanded={isTextareaExpanded}
           sendByCtrlEnter={sendByCtrlEnter}
           onTranscript={handleTranscript}
-        />
+          />
+        ) : (
+          <ChatComposer
+            pendingPermissionRequests={pendingPermissionRequests}
+            handlePermissionDecision={handlePermissionDecision}
+            handleGrantToolPermission={handleGrantToolPermission}
+            claudeStatus={claudeStatus}
+            isLoading={isLoading}
+            onAbortSession={handleAbortSession}
+            provider={provider}
+            permissionMode={permissionMode}
+            onModeSwitch={cyclePermissionMode}
+            thinkingMode={thinkingMode}
+            setThinkingMode={setThinkingMode}
+            tokenBudget={tokenBudget}
+            slashCommandsCount={slashCommandsCount}
+            onToggleCommandMenu={handleToggleCommandMenu}
+            hasInput={Boolean(input.trim())}
+            onClearInput={handleClearInput}
+            isUserScrolledUp={isUserScrolledUp}
+            hasMessages={chatMessages.length > 0}
+            onScrollToBottom={scrollToBottomAndReset}
+            onSubmit={handleSubmit}
+            isDragActive={isDragActive}
+            attachedImages={attachedImages}
+            onRemoveImage={(index) =>
+              setAttachedImages((previous) =>
+                previous.filter((_, currentIndex) => currentIndex !== index),
+              )
+            }
+            uploadingImages={uploadingImages}
+            imageErrors={imageErrors}
+            showFileDropdown={showFileDropdown}
+            filteredFiles={filteredFiles}
+            selectedFileIndex={selectedFileIndex}
+            onSelectFile={selectFile}
+            filteredCommands={filteredCommands}
+            selectedCommandIndex={selectedCommandIndex}
+            onCommandSelect={handleCommandSelect}
+            onCloseCommandMenu={resetCommandMenuState}
+            isCommandMenuOpen={showCommandMenu}
+            frequentCommands={commandQuery ? [] : frequentCommands}
+            getRootProps={getRootProps as (...args: unknown[]) => Record<string, unknown>}
+            getInputProps={getInputProps as (...args: unknown[]) => Record<string, unknown>}
+            openImagePicker={openImagePicker}
+            inputHighlightRef={inputHighlightRef}
+            renderInputWithMentions={renderInputWithMentions}
+            textareaRef={textareaRef}
+            input={input}
+            onInputChange={handleInputChange}
+            onTextareaClick={handleTextareaClick}
+            onTextareaKeyDown={handleKeyDown}
+            onTextareaPaste={handlePaste}
+            onTextareaScrollSync={syncInputOverlayScroll}
+            onTextareaInput={handleTextareaInput}
+            onInputFocusChange={handleInputFocusChange}
+            isInputFocused={isInputFocused}
+            placeholder={t('input.placeholder', {
+              provider:
+                provider === 'cursor'
+                  ? t('messageTypes.cursor')
+                  : provider === 'codex'
+                    ? t('messageTypes.codex')
+                    : provider === 'gemini'
+                      ? t('messageTypes.gemini')
+                      : t('messageTypes.claude'),
+            })}
+            isTextareaExpanded={isTextareaExpanded}
+            sendByCtrlEnter={sendByCtrlEnter}
+            onTranscript={handleTranscript}
+          />
+        )}
       </div>
 
       <QuickSettingsPanel />

@@ -5,8 +5,10 @@ import { ScrollArea } from '../../../../shared/view/ui';
 import type { Project } from '../../../../types/app';
 import type { ReleaseInfo } from '../../../../types/sharedTypes';
 import type { ConversationSearchResults, SearchProgress } from '../../hooks/useSidebarController';
+import { useUiVersion } from '../../../../hooks/useUiVersion';
 import SidebarFooter from './SidebarFooter';
 import SidebarHeader from './SidebarHeader';
+import SidebarHeaderV2 from './SidebarHeaderV2';
 import SidebarProjectList, { type SidebarProjectListProps } from './SidebarProjectList';
 
 type SearchMode = 'projects' | 'conversations';
@@ -60,6 +62,7 @@ type SidebarContentProps = {
   onShowSettings: () => void;
   projectListProps: SidebarProjectListProps;
   t: TFunction;
+  useNewUi?: boolean;
 };
 
 export default function SidebarContent({
@@ -87,16 +90,20 @@ export default function SidebarContent({
   onShowSettings,
   projectListProps,
   t,
+  useNewUi: useNewUiProp,
 }: SidebarContentProps) {
   const showConversationSearch = searchMode === 'conversations' && searchFilter.trim().length >= 2;
   const hasPartialResults = conversationResults && conversationResults.results.length > 0;
+  const { useNewUi: useNewUiFromHook } = useUiVersion();
+  const useNewUi = useNewUiProp ?? useNewUiFromHook;
+
+  const SidebarHeaderComponent = useNewUi ? SidebarHeaderV2 : SidebarHeader;
 
   return (
     <div
-      className="flex h-full flex-col bg-background/80 backdrop-blur-sm md:w-72 md:select-none"
-      style={{}}
+      className={`flex h-full flex-col md:select-none ${useNewUi ? 'v2-sidebar' : 'bg-background/80 backdrop-blur-sm md:w-72'}`}
     >
-      <SidebarHeader
+      <SidebarHeaderComponent
         isPWA={isPWA}
         isMobile={isMobile}
         isLoading={isLoading}

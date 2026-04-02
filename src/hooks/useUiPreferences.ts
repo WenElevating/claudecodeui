@@ -7,6 +7,7 @@ type UiPreferences = {
   autoScrollToBottom: boolean;
   sendByCtrlEnter: boolean;
   sidebarVisible: boolean;
+  useNewUi: boolean;
 };
 
 type UiPreferenceKey = keyof UiPreferences;
@@ -39,6 +40,7 @@ const DEFAULTS: UiPreferences = {
   autoScrollToBottom: true,
   sendByCtrlEnter: false,
   sidebarVisible: true,
+  useNewUi: false,
 };
 
 const PREFERENCE_KEYS = Object.keys(DEFAULTS) as UiPreferenceKey[];

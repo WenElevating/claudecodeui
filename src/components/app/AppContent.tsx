@@ -7,7 +7,9 @@ import { useWebSocket } from '../../contexts/WebSocketContext';
 import { useDeviceSettings } from '../../hooks/useDeviceSettings';
 import { useSessionProtection } from '../../hooks/useSessionProtection';
 import { useProjectsState } from '../../hooks/useProjectsState';
+import { useUiVersion } from '../../hooks/useUiVersion';
 import MobileNav from './MobileNav';
+import MobileNavV2 from './MobileNavV2';
 
 export default function AppContent() {
   const navigate = useNavigate();
@@ -16,6 +18,7 @@ export default function AppContent() {
   const { isMobile } = useDeviceSettings({ trackPWA: false });
   const { ws, sendMessage, latestMessage, isConnected } = useWebSocket();
   const wasConnectedRef = useRef(false);
+  const { useNewUi } = useUiVersion();
 
   const {
     activeSessions,
@@ -125,10 +128,11 @@ export default function AppContent() {
   }, [isConnected, selectedSession?.id, sendMessage]);
 
   return (
-    <div className="fixed inset-0 flex bg-background">
+    <div className={`fixed inset-0 flex ${useNewUi ? 'v2-app-bg' : 'bg-background'}`}>
+      {/* Desktop sidebar - show for both V1 and V2 */}
       {!isMobile ? (
-        <div className="h-full flex-shrink-0 border-r border-border/50">
-          <Sidebar {...sidebarSharedProps} />
+        <div className={`h-full flex-shrink-0 ${useNewUi ? 'v2-sidebar' : 'border-r border-border/50'}`}>
+          <Sidebar {...sidebarSharedProps} useNewUi={useNewUi} />
         </div>
       ) : (
         <div
@@ -154,7 +158,7 @@ export default function AppContent() {
             onClick={(event) => event.stopPropagation()}
             onTouchStart={(event) => event.stopPropagation()}
           >
-            <Sidebar {...sidebarSharedProps} />
+            <Sidebar {...sidebarSharedProps} useNewUi={useNewUi} />
           </div>
         </div>
       )}
@@ -181,15 +185,25 @@ export default function AppContent() {
           onNavigateToSession={(targetSessionId: string) => navigate(`/session/${targetSessionId}`)}
           onShowSettings={() => setShowSettings(true)}
           externalMessageUpdate={externalMessageUpdate}
+          useNewUi={useNewUi}
         />
       </div>
 
+      {/* Mobile nav - only show on mobile */}
       {isMobile && (
-        <MobileNav
-          activeTab={activeTab}
-          setActiveTab={setActiveTab}
-          isInputFocused={isInputFocused}
-        />
+        useNewUi ? (
+          <MobileNavV2
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
+            isInputFocused={isInputFocused}
+          />
+        ) : (
+          <MobileNav
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
+            isInputFocused={isInputFocused}
+          />
+        )
       )}
 
     </div>

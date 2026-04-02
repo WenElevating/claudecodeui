@@ -6,7 +6,9 @@ import type {
   MCPServerStatus,
   SessionWithProvider,
 } from '../../types/types';
+import { useUiVersion } from '../../../../hooks/useUiVersion';
 import SidebarProjectItem from './SidebarProjectItem';
+import SidebarProjectItemV2 from './SidebarProjectItemV2';
 import SidebarProjectsState from './SidebarProjectsState';
 
 export type SidebarProjectListProps = {
@@ -91,6 +93,9 @@ export default function SidebarProjectList({
   onSaveEditingSession,
   t,
 }: SidebarProjectListProps) {
+  const { useNewUi } = useUiVersion();
+  const ProjectItemComponent = useNewUi ? SidebarProjectItemV2 : SidebarProjectItem;
+
   const state = (
     <SidebarProjectsState
       isLoading={isLoading}
@@ -117,7 +122,7 @@ export default function SidebarProjectList({
       {!showProjects
         ? state
         : filteredProjects.map((project) => (
-            <SidebarProjectItem
+            <ProjectItemComponent
               key={project.name}
               project={project}
               selectedProject={selectedProject}

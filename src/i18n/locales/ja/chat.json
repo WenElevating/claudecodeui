@@ -12,7 +12,7 @@
     "copyAsText": "テキストとしてコピー"
   },
   "messageTypes": {
-    "user": "U",
+    "user": "あなた",
     "error": "エラー",
     "tool": "ツール",
     "claude": "Claude",
@@ -60,7 +60,7 @@
   },
   "thinking": {
     "title": "思考中...",
-    "emoji": "💭 思考中..."
+    "emoji": "思考中..."
   },
   "json": {
     "response": "JSONレスポンス"

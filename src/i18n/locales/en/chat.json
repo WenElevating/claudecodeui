@@ -12,7 +12,7 @@
     "copyAsText": "Copy as text"
   },
   "messageTypes": {
-    "user": "U",
+    "user": "You",
     "error": "Error",
     "tool": "Tool",
     "claude": "Claude",
@@ -61,7 +61,7 @@
   },
   "thinking": {
     "title": "Thinking...",
-    "emoji": "💭 Thinking..."
+    "emoji": "Thinking..."
   },
   "json": {
     "response": "JSON Response"

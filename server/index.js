@@ -293,17 +293,13 @@ function shouldAutoOpenUrlFromOutput(value = '') {
 const wss = new WebSocketServer({
     server,
     verifyClient: (info) => {
-        console.log('WebSocket connection attempt to:', info.req.url);
-
         // Platform mode: always allow connection
         if (IS_PLATFORM) {
             const user = authenticateWebSocket(null); // Will return first user
             if (!user) {
-                console.log('[WARN] Platform mode: No user found in database');
                 return false;
             }
             info.req.user = user;
-            console.log('[OK] Platform mode WebSocket authenticated for user:', user.username);
             return true;
         }
 
@@ -1476,8 +1472,6 @@ class WebSocketWriter {
 
 // Handle chat WebSocket connections
 function handleChatConnection(ws, request) {
-    console.log('[INFO] Chat WebSocket connected');
-
     // Add to connected clients for project updates
     connectedClients.add(ws);
 
@@ -1489,33 +1483,15 @@ function handleChatConnection(ws, request) {
             const data = JSON.parse(message);
 
             if (data.type === 'claude-command') {
-                console.log('[DEBUG] User message:', data.command || '[Continue/Resume]');
-                console.log('📁 Project:', data.options?.projectPath || 'Unknown');
-                console.log('🔄 Session:', data.options?.sessionId ? 'Resume' : 'New');
-
-                // Use Claude Agents SDK
                 await queryClaudeSDK(data.command, data.options, writer);
             } else if (data.type === 'cursor-command') {
-                console.log('[DEBUG] Cursor message:', data.command || '[Continue/Resume]');
-                console.log('📁 Project:', data.options?.cwd || 'Unknown');
-                console.log('🔄 Session:', data.options?.sessionId ? 'Resume' : 'New');
-                console.log('🤖 Model:', data.options?.model || 'default');
                 await spawnCursor(data.command, data.options, writer);
             } else if (data.type === 'codex-command') {
-                console.log('[DEBUG] Codex message:', data.command || '[Continue/Resume]');
-                console.log('📁 Project:', data.options?.projectPath || data.options?.cwd || 'Unknown');
-                console.log('🔄 Session:', data.options?.sessionId ? 'Resume' : 'New');
-                console.log('🤖 Model:', data.options?.model || 'default');
                 await queryCodex(data.command, data.options, writer);
             } else if (data.type === 'gemini-command') {
-                console.log('[DEBUG] Gemini message:', data.command || '[Continue/Resume]');
-                console.log('📁 Project:', data.options?.projectPath || data.options?.cwd || 'Unknown');
-                console.log('🔄 Session:', data.options?.sessionId ? 'Resume' : 'New');
-                console.log('🤖 Model:', data.options?.model || 'default');
                 await spawnGemini(data.command, data.options, writer);
             } else if (data.type === 'cursor-resume') {
                 // Backward compatibility: treat as cursor-command with resume and no prompt
-                console.log('[DEBUG] Cursor resume session (compat):', data.sessionId);
                 await spawnCursor('', {
                     sessionId: data.sessionId,
                     resume: true,

@@ -12,7 +12,7 @@
     "copyAsText": "复制为纯文本"
   },
   "messageTypes": {
-    "user": "U",
+    "user": "你",
     "error": "错误",
     "tool": "工具",
     "claude": "Claude",
@@ -61,7 +61,7 @@
   },
   "thinking": {
     "title": "思考中...",
-    "emoji": "💭 思考中..."
+    "emoji": "思考中..."
   },
   "json": {
     "response": "JSON 响应"

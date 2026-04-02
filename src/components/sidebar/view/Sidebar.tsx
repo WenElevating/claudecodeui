@@ -35,6 +35,7 @@ function Sidebar({
   settingsInitialTab,
   onCloseSettings,
   isMobile,
+  useNewUi,
 }: SidebarProps) {
   const { t } = useTranslation(['sidebar', 'common']);
   const { isPWA } = useDeviceSettings({ trackMobile: false });
@@ -270,6 +271,7 @@ function Sidebar({
             onShowSettings={onShowSettings}
             projectListProps={projectListProps}
             t={t}
+            useNewUi={useNewUi}
           />
         </>
       )}

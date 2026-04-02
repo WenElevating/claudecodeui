@@ -33,6 +33,7 @@ interface UseChatComposerStateArgs {
   selectedProject: Project | null;
   selectedSession: ProjectSession | null;
   currentSessionId: string | null;
+  setCurrentSessionId: (sessionId: string | null) => void;
   provider: SessionProvider;
   permissionMode: PermissionMode | string;
   cyclePermissionMode: () => void;
@@ -105,6 +106,7 @@ export function useChatComposerState({
   selectedProject,
   selectedSession,
   currentSessionId,
+  setCurrentSessionId,
   provider,
   permissionMode,
   cyclePermissionMode,
@@ -556,6 +558,8 @@ export function useChatComposerState({
           sessionStorage.removeItem('pendingSessionId');
         }
         pendingViewSessionRef.current = { sessionId: null, startedAt: Date.now() };
+        // Set the temporary session ID so that messages can be stored correctly
+        setCurrentSessionId(sessionToActivate);
       }
       onSessionActive?.(sessionToActivate);
       if (effectiveSessionId && !isTemporarySessionId(effectiveSessionId)) {
