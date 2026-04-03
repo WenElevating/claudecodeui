@@ -29,7 +29,7 @@
 <h3>Desktop View</h3>
 <img src="public/screenshots/desktop-main.png" alt="Desktop Interface" width="400">
 <br>
-<em>Main interface showing project overview and chat</em>
+<em>Main interface with Claude Code style theme</em>
 </td>
 <td align="center">
 <h3>Mobile Experience</h3>
@@ -48,17 +48,17 @@
 </tr>
 </table>
 
-
-
 </div>
 
 ## Features
 
 - **Responsive Design** - Works seamlessly across desktop, tablet, and mobile so you can also use Agents from mobile 
+- **Claude Code Style Theme** - Beautiful amber-tinted design inspired by Claude Code CLI aesthetics
 - **Interactive Chat Interface** - Built-in chat interface for seamless communication with the Agents
 - **Integrated Shell Terminal** - Direct access to the Agents CLI through built-in shell functionality
 - **File Explorer** - Interactive file tree with syntax highlighting and live editing
 - **Git Explorer** - View, stage and commit your changes. You can also switch branches 
+- **Flexible Workspace Selection** - Choose workspaces from any drive or directory without restrictions
 - **Session Management** - Resume conversations, manage multiple sessions, and track history
 - **Plugin System** - Extend CloudCLI with custom plugins — add new tabs, backend services, and integrations. [Build your own →](https://github.com/cloudcli-ai/cloudcli-plugin-starter)
 - **TaskMaster AI Integration** *(Optional)* - Advanced project management with AI-powered task planning, PRD parsing, and workflow automation

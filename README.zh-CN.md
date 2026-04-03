@@ -29,7 +29,7 @@
 <h3>桌面视图</h3>
 <img src="public/screenshots/desktop-main.png" alt="桌面界面" width="400">
 <br>
-<em>显示项目概览和聊天的主界面</em>
+<em>Claude Code 风格主题主界面</em>
 </td>
 <td align="center">
 <h3>移动体验</h3>
@@ -53,10 +53,12 @@
 ## 功能
 
 - **响应式设计** - 在桌面、平板和移动设备上无缝运行，让您随时随地使用 Agents
+- **Claude Code 风格主题** - 灵感源自 Claude Code CLI 美学的精美琥珀色调设计
 - **交互聊天界面** - 内置聊天 UI，轻松与 Agents 交流
 - **集成 Shell 终端** - 通过内置 shell 功能直接访问 Agents CLI
 - **文件浏览器** - 交互式文件树，支持语法高亮与实时编辑
 - **Git 浏览器** - 查看、暂存并提交更改，还可切换分支
+- **灵活的工作区选择** - 可从任意驱动器或目录选择工作区，无路径限制
 - **会话管理** - 恢复对话、管理多个会话并跟踪历史记录
 - **插件系统** - 通过自定义选项卡、后端服务与集成扩展 CloudCLI。 [开始构建 →](https://github.com/cloudcli-ai/cloudcli-plugin-starter)
 - **TaskMaster AI 集成** *(可选)* - 结合 AI 任务规划、PRD 分析与工作流自动化，实现高级项目管理
@@ -146,6 +148,7 @@ CloudCLI 配备插件系统，允许你添加带自定义前端 UI 和可选 Nod
 | 插件 | 描述 |
 |---|---|
 | **[Project Stats](https://github.com/cloudcli-ai/cloudcli-plugin-starter)** | 展示当前项目的文件数、代码行数、文件类型分布、最大文件以及最近修改的文件 |
+| **[Web Terminal](https://github.com/cloudcli-ai/cloudcli-plugin-terminal)** | 完整的 xterm.js 终端，支持多标签页 |
 
 ### 自行构建
 
@@ -204,9 +207,9 @@ CloudCLI UI 与 CloudCLI Cloud 是对 Claude Code 的扩展，而非旁观 — M
 
 ## 许可证
 
-GNU 通用公共许可证 v3.0 - 详见 [LICENSE](LICENSE) 文件。
+GNU Affero General Public License v3.0 or later (AGPL-3.0-or-later) — 详见 [LICENSE](LICENSE) 文件。
 
-该项目为开源软件，在 GPL v3 许可证下可自由使用、修改与分发。
+本项目为开源软件，在 AGPL-3.0-or-later 许可证下可自由使用、修改与分发。若你修改本软件并以网络服务形式运行，必须向该服务的用户提供修改后的源代码。
 
 ## 致谢
 
