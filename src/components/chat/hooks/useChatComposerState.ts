@@ -712,17 +712,30 @@ export function useChatComposerState({
     inputValueRef.current = input;
   }, [input]);
 
+  // Clear draft when starting a new session; restore draft when switching to existing session.
+  // Per-project draft storage matches UX expectation that drafts persist across session switches.
   useEffect(() => {
     if (!selectedProject) {
       return;
     }
+
+    if (!selectedSession) {
+      // Guard: skip if already empty to avoid triggering the other effect
+      if (inputValueRef.current !== '') {
+        setInput('');
+        inputValueRef.current = '';
+      }
+      safeLocalStorage.removeItem(`draft_input_${selectedProject.name}`);
+      return;
+    }
+
     const savedInput = safeLocalStorage.getItem(`draft_input_${selectedProject.name}`) || '';
     setInput((previous) => {
       const next = previous === savedInput ? previous : savedInput;
       inputValueRef.current = next;
       return next;
     });
-  }, [selectedProject?.name]);
+  }, [selectedProject?.name, selectedSession?.id]);
 
   useEffect(() => {
     if (!selectedProject) {

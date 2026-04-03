@@ -171,7 +171,7 @@ const MessageComponentV2 = memo(({ message, prevMessage, createDiff, onFileOpen,
               </div>
             ) : (
               <div className="v2-avatar v2-avatar-assistant">
-                <SessionProviderLogo provider={provider} className="h-full w-full p-1.5" />
+                <SessionProviderLogo provider={provider} className="h-full w-full" />
               </div>
             )
           )}

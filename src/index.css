@@ -1368,8 +1368,7 @@
   }
 
   .v2-avatar-assistant {
-    background: linear-gradient(135deg, hsl(var(--claude-accent)) 0%, hsl(var(--claude-accent-light)) 100%);
-    color: white;
+    /* No background - CLI logo displays directly without circular frame */
   }
 
   .v2-avatar-sm {
