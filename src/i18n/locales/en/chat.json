@@ -268,5 +268,9 @@
   },
   "tasks": {
     "nextTaskPrompt": "Start the next task"
+  },
+  "sessionInTerminal": {
+    "title": "This session is running in a terminal",
+    "description": "Messages and permission requests from the terminal session are not visible here. You can browse conversation history in read-only mode."
   }
 }

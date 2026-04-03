@@ -102,6 +102,11 @@ const getNotificationSessionSummary = (
   return normalizedFallback.length > 80 ? `${normalizedFallback.slice(0, 77)}...` : normalizedFallback;
 };
 
+/** Timeout (ms) after sending a command with no server response before auto-recovering the UI. */
+const COMMAND_TIMEOUT_MS = 60_000;
+/** Timeout (ms) after sending abort with no complete response before force-recovering the UI. */
+const ABORT_TIMEOUT_MS = 10_000;
+
 export function useChatComposerState({
   selectedProject,
   selectedSession,
@@ -149,6 +154,8 @@ export function useChatComposerState({
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const inputHighlightRef = useRef<HTMLDivElement>(null);
+  const commandTimeoutRef = useRef<number | null>(null);
+  const abortTimeoutRef = useRef<number | null>(null);
   const handleSubmitRef = useRef<
     ((event: FormEvent<HTMLFormElement> | MouseEvent | TouchEvent | KeyboardEvent<HTMLTextAreaElement>) => Promise<void>) | null
   >(null);
@@ -549,6 +556,15 @@ export function useChatComposerState({
         can_interrupt: true,
       });
 
+      // Start command timeout — if no server response within COMMAND_TIMEOUT_MS, force-recover UI
+      if (commandTimeoutRef.current) clearTimeout(commandTimeoutRef.current);
+      commandTimeoutRef.current = window.setTimeout(() => {
+        setIsLoading(false);
+        setCanAbortSession(false);
+        setClaudeStatus(null);
+        commandTimeoutRef.current = null;
+      }, COMMAND_TIMEOUT_MS);
+
       setIsUserScrolledUp(false);
       setTimeout(() => scrollToBottom(), 100);
 
@@ -703,6 +719,20 @@ export function useChatComposerState({
       thinkingMode,
     ],
   );
+
+  // Clear command and abort timeouts when loading completes (server responded)
+  useEffect(() => {
+    if (!isLoading) {
+      if (commandTimeoutRef.current) {
+        clearTimeout(commandTimeoutRef.current);
+        commandTimeoutRef.current = null;
+      }
+      if (abortTimeoutRef.current) {
+        clearTimeout(abortTimeoutRef.current);
+        abortTimeoutRef.current = null;
+      }
+    }
+  }, [isLoading]);
 
   useEffect(() => {
     handleSubmitRef.current = handleSubmit;
@@ -893,6 +923,17 @@ export function useChatComposerState({
       sessionId: targetSessionId,
       provider,
     });
+
+    // Abort timeout: if server doesn't respond with 'complete' within ABORT_TIMEOUT_MS,
+    // force-recover the UI so it doesn't stay stuck in loading state.
+    if (abortTimeoutRef.current) clearTimeout(abortTimeoutRef.current);
+    abortTimeoutRef.current = window.setTimeout(() => {
+      console.warn('[ABORT_TIMEOUT] No complete response after abort, force-recovering UI');
+      setIsLoading(false);
+      setCanAbortSession(false);
+      setClaudeStatus(null);
+      abortTimeoutRef.current = null;
+    }, ABORT_TIMEOUT_MS);
   }, [canAbortSession, currentSessionId, pendingViewSessionRef, provider, selectedSession?.id, sendMessage]);
 
   const handleTranscript = useCallback((text: string) => {
@@ -971,6 +1012,20 @@ export function useChatComposerState({
     },
     [onInputFocusChange],
   );
+
+  // Cleanup timeout refs on unmount
+  useEffect(() => {
+    return () => {
+      if (commandTimeoutRef.current) {
+        clearTimeout(commandTimeoutRef.current);
+        commandTimeoutRef.current = null;
+      }
+      if (abortTimeoutRef.current) {
+        clearTimeout(abortTimeoutRef.current);
+        abortTimeoutRef.current = null;
+      }
+    };
+  }, []);
 
   return {
     input,

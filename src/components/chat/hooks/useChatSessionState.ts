@@ -107,6 +107,7 @@ export function useChatSessionState({
   const [hasMoreMessages, setHasMoreMessages] = useState(false);
   const [totalMessages, setTotalMessages] = useState(0);
   const [canAbortSession, setCanAbortSession] = useState(false);
+  const [sessionInTerminal, setSessionInTerminal] = useState<{ active: boolean; provider: string | null }>({ active: false, provider: null });
   const [isUserScrolledUp, setIsUserScrolledUp] = useState(false);
   const [tokenBudget, setTokenBudget] = useState<Record<string, unknown> | null>(null);
   const [visibleMessageCount, setVisibleMessageCount] = useState(INITIAL_VISIBLE_MESSAGES);
@@ -327,6 +328,7 @@ export function useChatSessionState({
       setCanAbortSession(false);
       setIsLoading(false);
       setCurrentSessionId(null);
+      setSessionInTerminal({ active: false, provider: null });
       sessionStorage.removeItem('cursorSessionId');
       messagesOffsetRef.current = 0;
       setHasMoreMessages(false);
@@ -350,6 +352,7 @@ export function useChatSessionState({
       pendingViewSessionRef.current = null;
       setClaudeStatus(null);
       setCanAbortSession(false);
+      setSessionInTerminal({ active: false, provider: null });
     }
 
     // Reset pagination/scroll state
@@ -726,6 +729,8 @@ export function useChatSessionState({
     totalMessages,
     canAbortSession,
     setCanAbortSession,
+    sessionInTerminal,
+    setSessionInTerminal,
     isUserScrolledUp,
     setIsUserScrolledUp,
     tokenBudget,

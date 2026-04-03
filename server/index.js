@@ -225,6 +225,23 @@ const server = http.createServer(app);
 
 const ptySessionsMap = new Map();
 const PTY_SESSION_TIMEOUT = 30 * 60 * 1000;
+
+/**
+ * Check if any PTY session exists for the given session ID.
+ * PTY keys are `${projectPath}_${sessionId}` or `${projectPath}_${sessionId}_cmd_xxx`.
+ * @param {string} sessionId
+ * @returns {{ active: boolean, provider: string|null }}
+ */
+function getPtySessionStatus(sessionId) {
+    if (!sessionId) return { active: false, provider: null };
+    for (const [key, session] of ptySessionsMap) {
+        // Match `_sessionId` at end of key or `_sessionId_cmd_` for command sessions
+        if (key.endsWith(`_${sessionId}`) || key.includes(`_${sessionId}_cmd_`)) {
+            return { active: true, provider: session.provider || null };
+        }
+    }
+    return { active: false, provider: null };
+}
 const SHELL_URL_PARSE_BUFFER_LIMIT = 32768;
 const ANSI_ESCAPE_SEQUENCE_REGEX = /\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~]|\][^\x07]*(?:\x07|\x1B\\))/g;
 const TRAILING_URL_PUNCTUATION_REGEX = /[)\]}>.,;:!?]+$/;
@@ -1539,21 +1556,34 @@ function handleChatConnection(ws, request) {
     // Add to connected clients for project updates
     connectedClients.add(ws);
 
+    // Track the last active SDK session for this connection so we can auto-abort on disconnect
+    let lastActiveSessionId = null;
+    let lastActiveProvider = 'claude';
+    const CLIENT_DISCONNECT_ABORT_TIMEOUT_MS = 30_000;
+    let disconnectAbortTimer = null;
+
     // Wrap WebSocket with writer for consistent interface with SSEStreamWriter
     const writer = new WebSocketWriter(ws, request?.user?.id ?? request?.user?.userId ?? null);
+
+    /** Map command type → { handler, providerName } for DRY dispatch + session tracking */
+    const commandHandlers = {
+        'claude-command': { handler: queryClaudeSDK, provider: 'claude' },
+        'cursor-command': { handler: spawnCursor, provider: 'cursor' },
+        'codex-command': { handler: queryCodex, provider: 'codex' },
+        'gemini-command': { handler: spawnGemini, provider: 'gemini' },
+    };
 
     ws.on('message', async (message) => {
         try {
             const data = JSON.parse(message);
 
-            if (data.type === 'claude-command') {
-                await queryClaudeSDK(data.command, data.options, writer);
-            } else if (data.type === 'cursor-command') {
-                await spawnCursor(data.command, data.options, writer);
-            } else if (data.type === 'codex-command') {
-                await queryCodex(data.command, data.options, writer);
-            } else if (data.type === 'gemini-command') {
-                await spawnGemini(data.command, data.options, writer);
+            const cmd = commandHandlers[data.type];
+            if (cmd) {
+                if (data.options?.sessionId) {
+                    lastActiveSessionId = data.options.sessionId;
+                    lastActiveProvider = cmd.provider;
+                }
+                await cmd.handler(data.command, data.options, writer);
             } else if (data.type === 'cursor-resume') {
                 // Backward compatibility: treat as cursor-command with resume and no prompt
                 await spawnCursor('', {
@@ -1613,14 +1643,28 @@ function handleChatConnection(ws, request) {
                         // Reconnect the session's writer to the new WebSocket so
                         // subsequent SDK output flows to the refreshed client.
                         reconnectSessionWriter(sessionId, ws);
+                        // Client reconnected — cancel any pending disconnect abort timer
+                        if (disconnectAbortTimer) {
+                            clearTimeout(disconnectAbortTimer);
+                            disconnectAbortTimer = null;
+                            console.log(`[RECONNECT] Cancelled disconnect abort timer for session ${sessionId}`);
+                        }
+                        // Update tracking for this connection
+                        lastActiveSessionId = sessionId;
+                        lastActiveProvider = provider;
                     }
                 }
+
+                // Also check if a PTY (terminal) session is running for this session ID
+                const ptyStatus = getPtySessionStatus(sessionId);
 
                 writer.send({
                     type: 'session-status',
                     sessionId,
                     provider,
-                    isProcessing: isActive
+                    isProcessing: isActive,
+                    hasPtySession: ptyStatus.active,
+                    ptyProvider: ptyStatus.provider
                 });
             } else if (data.type === 'get-pending-permissions') {
                 // Return pending permission requests for a session
@@ -1659,6 +1703,29 @@ function handleChatConnection(ws, request) {
         console.log('🔌 Chat client disconnected');
         // Remove from connected clients
         connectedClients.delete(ws);
+
+        // Auto-abort the active SDK session after timeout if client doesn't reconnect
+        if (lastActiveSessionId && !disconnectAbortTimer) {
+            const sessionId = lastActiveSessionId;
+            const sessionProvider = lastActiveProvider;
+            disconnectAbortTimer = setTimeout(async () => {
+                console.log(`[DISCONNECT_ABORT] Session ${sessionId} (${sessionProvider}) not reconnected within ${CLIENT_DISCONNECT_ABORT_TIMEOUT_MS}ms, aborting`);
+                try {
+                    if (sessionProvider === 'claude') {
+                        await abortClaudeSDKSession(sessionId);
+                    } else if (sessionProvider === 'cursor') {
+                        abortCursorSession(sessionId);
+                    } else if (sessionProvider === 'codex') {
+                        abortCodexSession(sessionId);
+                    } else if (sessionProvider === 'gemini') {
+                        abortGeminiSession(sessionId);
+                    }
+                } catch (err) {
+                    console.error(`[DISCONNECT_ABORT] Error aborting session ${sessionId}:`, err.message);
+                }
+                disconnectAbortTimer = null;
+            }, CLIENT_DISCONNECT_ABORT_TIMEOUT_MS);
+        }
     });
 }
 
@@ -1874,7 +1941,8 @@ function handleShellConnection(ws) {
                         buffer: [],
                         timeoutId: null,
                         projectPath,
-                        sessionId
+                        sessionId,
+                        provider: isPlainShell ? 'plain-shell' : provider
                     });
 
                     // Handle data output

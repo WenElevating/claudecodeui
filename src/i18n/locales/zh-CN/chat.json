@@ -250,5 +250,9 @@
   },
   "tasks": {
     "nextTaskPrompt": "开始下一个任务"
+  },
+  "sessionInTerminal": {
+    "title": "此会话正在终端中运行",
+    "description": "终端中的消息和权限请求不会显示在此处。你可以以只读模式浏览对话历史。"
   }
 }

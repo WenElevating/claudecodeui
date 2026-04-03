@@ -17,6 +17,7 @@ import CommandMenu from './CommandMenu';
 import ClaudeStatus from './ClaudeStatus';
 import ImageAttachment from './ImageAttachment';
 import PermissionRequestsBanner from './PermissionRequestsBanner';
+import TerminalSessionBanner from './TerminalSessionBanner';
 import ChatInputControls from './ChatInputControls';
 
 interface MentionableFile {
@@ -44,6 +45,7 @@ interface ChatComposerProps {
   claudeStatus: { text: string; tokens: number; can_interrupt: boolean } | null;
   isLoading: boolean;
   onAbortSession: () => void;
+  sessionInTerminal: { active: boolean; provider: string | null };
   provider: Provider | string;
   permissionMode: PermissionMode | string;
   onModeSwitch: () => void;
@@ -101,6 +103,7 @@ export default function ChatComposer({
   claudeStatus,
   isLoading,
   onAbortSession,
+  sessionInTerminal,
   provider,
   permissionMode,
   onModeSwitch,
@@ -180,6 +183,8 @@ export default function ChatComposer({
           />
         </div>
       )}
+
+      {sessionInTerminal.active && <TerminalSessionBanner />}
 
       <div className="mx-auto mb-3 max-w-4xl">
         <PermissionRequestsBanner
@@ -303,6 +308,7 @@ export default function ChatComposer({
               placeholder={placeholder}
               className="chat-input-placeholder block max-h-[40vh] min-h-[50px] w-full resize-none overflow-y-auto rounded-2xl bg-transparent py-1.5 pl-12 pr-20 text-base leading-6 text-foreground placeholder-muted-foreground/50 transition-all duration-200 focus:outline-none sm:max-h-[300px] sm:min-h-[80px] sm:py-4 sm:pr-40"
               style={{ height: '50px' }}
+              disabled={sessionInTerminal.active}
             />
 
             <button

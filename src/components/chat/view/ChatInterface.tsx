@@ -99,6 +99,8 @@ function ChatInterface({
     totalMessages,
     canAbortSession,
     setCanAbortSession,
+    sessionInTerminal,
+    setSessionInTerminal,
     isUserScrolledUp,
     setIsUserScrolledUp,
     tokenBudget,
@@ -232,6 +234,7 @@ function ChatInterface({
     setCurrentSessionId,
     setIsLoading,
     setCanAbortSession,
+    setSessionInTerminal,
     setClaudeStatus,
     setTokenBudget,
     setPendingPermissionRequests,
@@ -356,6 +359,7 @@ function ChatInterface({
           claudeStatus={claudeStatus}
           isLoading={isLoading}
           onAbortSession={handleAbortSession}
+          sessionInTerminal={sessionInTerminal}
           provider={provider}
           permissionMode={permissionMode}
           onModeSwitch={cyclePermissionMode}
@@ -426,6 +430,7 @@ function ChatInterface({
             claudeStatus={claudeStatus}
             isLoading={isLoading}
             onAbortSession={handleAbortSession}
+            sessionInTerminal={sessionInTerminal}
             provider={provider}
             permissionMode={permissionMode}
             onModeSwitch={cyclePermissionMode}

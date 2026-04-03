@@ -17,6 +17,7 @@ import CommandMenu from './CommandMenu';
 import ClaudeStatus from './ClaudeStatus';
 import ImageAttachment from './ImageAttachment';
 import PermissionRequestsBanner from './PermissionRequestsBanner';
+import TerminalSessionBanner from './TerminalSessionBanner';
 import ChatInputControls from './ChatInputControls';
 
 interface MentionableFile {
@@ -44,6 +45,7 @@ interface ChatComposerProps {
   claudeStatus: { text: string; tokens: number; can_interrupt: boolean } | null;
   isLoading: boolean;
   onAbortSession: () => void;
+  sessionInTerminal: { active: boolean; provider: string | null };
   provider: Provider | string;
   permissionMode: PermissionMode | string;
   onModeSwitch: () => void;
@@ -101,6 +103,7 @@ export default function ChatComposerV2({
   claudeStatus,
   isLoading,
   onAbortSession,
+  sessionInTerminal,
   provider,
   permissionMode,
   onModeSwitch,
@@ -178,6 +181,8 @@ export default function ChatComposerV2({
           />
         </div>
       )}
+
+      {sessionInTerminal.active && <TerminalSessionBanner maxWidthClass="max-w-3xl md:max-w-4xl" />}
 
       <div className="mx-auto mb-3 max-w-3xl md:max-w-4xl">
         <PermissionRequestsBanner
@@ -292,6 +297,7 @@ export default function ChatComposerV2({
               className="v2-input-field flex-1"
               style={{ minHeight: '24px', maxHeight: '200px' }}
               rows={1}
+              disabled={sessionInTerminal.active}
             />
 
             <div className="flex items-center gap-1 flex-shrink-0">

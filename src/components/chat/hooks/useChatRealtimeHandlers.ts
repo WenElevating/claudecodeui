@@ -55,6 +55,7 @@ interface UseChatRealtimeHandlersArgs {
   setCurrentSessionId: (sessionId: string | null) => void;
   setIsLoading: (loading: boolean) => void;
   setCanAbortSession: (canAbort: boolean) => void;
+  setSessionInTerminal: (state: { active: boolean; provider: string | null }) => void;
   setClaudeStatus: (status: { text: string; tokens: number; can_interrupt: boolean } | null) => void;
   setTokenBudget: (budget: Record<string, unknown> | null) => void;
   setPendingPermissionRequests: Dispatch<SetStateAction<PendingPermissionRequest[]>>;
@@ -84,6 +85,7 @@ export function useChatRealtimeHandlers({
   setCurrentSessionId,
   setIsLoading,
   setCanAbortSession,
+  setSessionInTerminal,
   setClaudeStatus,
   setTokenBudget,
   setPendingPermissionRequests,
@@ -135,6 +137,13 @@ export function useChatRealtimeHandlers({
         case 'session-status': {
           const statusSessionId = msg.sessionId;
           if (!statusSessionId) return;
+
+          // Handle PTY (terminal) session detection
+          const isActive = msg.hasPtySession === true;
+          setSessionInTerminal((prev: { active: boolean; provider: string | null }) => {
+            if (prev.active === isActive && prev.provider === (msg.ptyProvider || null)) return prev;
+            return { active: isActive, provider: msg.ptyProvider || null };
+          });
 
           const status = msg.status;
           if (status) {
