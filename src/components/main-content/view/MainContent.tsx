@@ -4,6 +4,7 @@ import FileTree from '../../file-tree/view/FileTree';
 import FileTreeV2 from '../../file-tree/view/v2/FileTreeV2';
 import StandaloneShell from '../../standalone-shell/view/StandaloneShell';
 import GitPanel from '../../git-panel/view/GitPanel';
+import GitPanelV2 from '../../git-panel/view/v2/GitPanelV2';
 import PluginTabContent from '../../plugins/view/PluginTabContent';
 import type { MainContentProps } from '../types/types';
 import { useTaskMaster } from '../../../contexts/TaskMasterContext';
@@ -164,7 +165,11 @@ function MainContent({
 
           {activeTab === 'git' && (
             <div className="h-full overflow-hidden">
-              <GitPanel selectedProject={selectedProject} isMobile={isMobile} onFileOpen={handleFileOpen} />
+              {useNewUi ? (
+                <GitPanelV2 selectedProject={selectedProject} isMobile={isMobile} onFileOpen={handleFileOpen} />
+              ) : (
+                <GitPanel selectedProject={selectedProject} isMobile={isMobile} onFileOpen={handleFileOpen} />
+              )}
             </div>
           )}
 
