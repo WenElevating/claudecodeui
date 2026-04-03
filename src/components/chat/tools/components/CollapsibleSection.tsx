@@ -53,7 +53,7 @@ export const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
         )}
         {action && <span className="ml-1 flex-shrink-0">{action}</span>}
       </summary>
-      <div className="mt-1.5 pl-[18px]">
+      <div className="mt-1.5 max-w-full overflow-hidden pl-[18px]">
         {children}
       </div>
     </details>
