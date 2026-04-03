@@ -345,6 +345,7 @@ function ChatInterface({
           showThinking={showThinking}
           selectedProject={selectedProject}
           isLoading={isLoading}
+          isInputFocused={isInputFocused}
         />
 
         {useNewUi ? (
