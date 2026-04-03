@@ -1,5 +1,5 @@
+import React, { useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useCallback, useRef } from 'react';
 import type { Dispatch, RefObject, SetStateAction } from 'react';
 import type { ChatMessage } from '../../types/types';
 import type { Project, ProjectSession, SessionProvider } from '../../../../types/app';
@@ -9,6 +9,7 @@ import MessageComponentV2 from './MessageComponentV2';
 import ProviderSelectionEmptyState from './ProviderSelectionEmptyState';
 import AssistantThinkingIndicator from './AssistantThinkingIndicator';
 import { useUiVersion } from '../../../../hooks/useUiVersion';
+import { cn } from '../../../../lib/utils';
 
 interface ChatMessagesPaneProps {
   scrollContainerRef: RefObject<HTMLDivElement>;
@@ -57,7 +58,7 @@ interface ChatMessagesPaneProps {
   isInputFocused?: boolean;
 }
 
-export default function ChatMessagesPane({
+function ChatMessagesPane({
   scrollContainerRef,
   onWheel,
   onTouchMove,
@@ -138,7 +139,11 @@ export default function ChatMessagesPane({
       ref={scrollContainerRef}
       onWheel={onWheel}
       onTouchMove={onTouchMove}
-      className={`relative flex-1 overflow-y-auto ${useNewUi ? 'v2-app-bg space-y-0 overflow-x-hidden px-4 py-4' : 'space-y-3 px-0 py-3 sm:space-y-4 sm:p-4'} ${isInputFocused ? 'max-sm:pb-48' : ''}`}
+      className={cn(
+        'relative flex-1 overflow-y-auto',
+        useNewUi ? 'v2-app-bg space-y-0 overflow-x-hidden px-4 py-4' : 'space-y-3 px-0 py-3 sm:space-y-4 sm:p-4',
+        isInputFocused && 'max-sm:pb-48',
+      )}
     >
       {isLoadingSessionMessages && chatMessages.length === 0 ? (
         <div className="mt-8 text-center text-gray-500 dark:text-gray-400">
@@ -273,3 +278,5 @@ export default function ChatMessagesPane({
   );
 }
 
+
+export default React.memo(ChatMessagesPane);
