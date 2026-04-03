@@ -2359,6 +2359,42 @@
     }
   }
 
+  /* V2 Wizard Backdrop — same token overrides as settings for consistency */
+  .v2-wizard-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: hsl(var(--claude-bg) / 0.85);
+    backdrop-filter: blur(8px);
+    padding: 16px;
+
+    --primary: var(--claude-accent);
+    --primary-foreground: 0 0% 100%;
+    --ring: var(--claude-accent);
+    --accent: var(--claude-tertiary);
+    --accent-foreground: var(--claude-text);
+    --secondary: var(--claude-tertiary);
+    --secondary-foreground: var(--claude-text);
+    --border: var(--claude-border);
+    --input: var(--claude-border-default);
+    --muted: var(--claude-tertiary);
+    --muted-foreground: var(--claude-text-secondary);
+    --background: var(--claude-bg);
+    --foreground: var(--claude-text);
+    --card: var(--claude-elevated);
+    --card-foreground: var(--claude-text);
+  }
+
+  @media (max-width: 767px) {
+    .v2-wizard-backdrop {
+      padding: 0;
+      background: hsl(var(--claude-bg));
+    }
+  }
+
   .v2-settings-shell {
     display: flex;
     flex-direction: column;

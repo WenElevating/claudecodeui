@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Eye, EyeOff, FolderOpen, FolderPlus, Loader2, Plus, X } from 'lucide-react';
+import { Eye, EyeOff, FolderOpen, FolderPlus, HardDrive, Loader2, Plus, X } from 'lucide-react';
 import { Button, Input } from '../../../shared/view/ui';
-import { browseFilesystemFolders, createFolderInFilesystem } from '../data/workspaceApi';
-import { getParentPath, joinFolderPath } from '../utils/pathUtils';
+import { browseFilesystemFolders, createFolderInFilesystem, listAvailableDrives } from '../data/workspaceApi';
+import { getParentPath, joinFolderPath, isWindowsDriveRoot } from '../utils/pathUtils';
 import type { FolderSuggestion } from '../types';
 
 type FolderBrowserModalProps = {
@@ -20,12 +20,22 @@ export default function FolderBrowserModal({
 }: FolderBrowserModalProps) {
   const [currentPath, setCurrentPath] = useState('~');
   const [folders, setFolders] = useState<FolderSuggestion[]>([]);
+  const [drives, setDrives] = useState<FolderSuggestion[]>([]);
   const [loadingFolders, setLoadingFolders] = useState(false);
   const [showHiddenFolders, setShowHiddenFolders] = useState(false);
   const [showNewFolderInput, setShowNewFolderInput] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
   const [creatingFolder, setCreatingFolder] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Load available drives on mount
+  useEffect(() => {
+    if (!isOpen) return;
+
+    listAvailableDrives()
+      .then(setDrives)
+      .catch(err => console.error('Failed to load drives:', err));
+  }, [isOpen]);
 
   const loadFolders = useCallback(async (pathToLoad: string) => {
     setLoadingFolders(true);
@@ -91,6 +101,7 @@ export default function FolderBrowserModal({
   }, [currentPath, loadFolders, newFolderName]);
 
   const parentPath = getParentPath(currentPath);
+  const isAtDriveRoot = isWindowsDriveRoot(currentPath);
 
   if (!isOpen) {
     return null;
@@ -193,6 +204,29 @@ export default function FolderBrowserModal({
                   <FolderOpen className="h-5 w-5 text-gray-400" />
                   <span className="font-medium text-gray-700 dark:text-gray-300">..</span>
                 </button>
+              )}
+
+              {/* Drives section - show when at drive root level on Windows */}
+              {isAtDriveRoot && drives.length > 0 && (
+                <div className="mb-3">
+                  <div className="px-4 py-1.5 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                    Drives
+                  </div>
+                  <div className="grid grid-cols-2 gap-1">
+                    {drives.map((drive) => (
+                      <button
+                        key={drive.path}
+                        onClick={() => loadFolders(drive.path)}
+                        className={`flex items-center gap-2 rounded-lg px-4 py-2.5 text-left transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 ${
+                          currentPath === drive.path ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+                        }`}
+                      >
+                        <HardDrive className="h-4 w-4 text-blue-500" />
+                        <span className="text-sm font-medium text-gray-900 dark:text-white">{drive.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
               )}
 
               {visibleFolders.length === 0 ? (

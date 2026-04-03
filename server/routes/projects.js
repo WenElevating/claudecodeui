@@ -110,35 +110,27 @@ export async function validateWorkspacePath(requestedPath) {
       }
     }
 
-    // Resolve the workspace root to its real path
-    const resolvedWorkspaceRoot = await fs.realpath(WORKSPACES_ROOT);
-
-    // Ensure the resolved path is contained within the allowed workspace root
-    if (!realPath.startsWith(resolvedWorkspaceRoot + path.sep) &&
-        realPath !== resolvedWorkspaceRoot) {
-      return {
-        valid: false,
-        error: `Workspace path must be within the allowed workspace root: ${WORKSPACES_ROOT}`
-      };
-    }
-
     // Additional symlink check for existing paths
+    // Verify symlinks don't point to forbidden system directories
     try {
       await fs.access(absolutePath);
       const stats = await fs.lstat(absolutePath);
 
       if (stats.isSymbolicLink()) {
-        // Verify symlink target is also within allowed root
         const linkTarget = await fs.readlink(absolutePath);
         const resolvedTarget = path.resolve(path.dirname(absolutePath), linkTarget);
         const realTarget = await fs.realpath(resolvedTarget);
 
-        if (!realTarget.startsWith(resolvedWorkspaceRoot + path.sep) &&
-            realTarget !== resolvedWorkspaceRoot) {
-          return {
-            valid: false,
-            error: 'Symlink target is outside the allowed workspace root'
-          };
+        // Check symlink target against forbidden system paths
+        const normalizedTarget = path.normalize(realTarget);
+        for (const forbidden of FORBIDDEN_PATHS) {
+          if (normalizedTarget === forbidden ||
+              normalizedTarget.startsWith(forbidden + path.sep)) {
+            return {
+              valid: false,
+              error: `Symlink target resolves to a system-critical directory: ${forbidden}`
+            };
+          }
         }
       }
     } catch (error) {

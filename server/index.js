@@ -39,7 +39,7 @@ import os from 'os';
 import http from 'http';
 import cors from 'cors';
 import { promises as fsPromises } from 'fs';
-import { spawn } from 'child_process';
+import { spawn, execSync } from 'child_process';
 import pty from 'node-pty';
 import fetch from 'node-fetch';
 import mime from 'mime-types';
@@ -725,6 +725,70 @@ app.get('/api/browse-filesystem', authenticateToken, async (req, res) => {
     } catch (error) {
         console.error('Error browsing filesystem:', error);
         res.status(500).json({ error: 'Failed to browse filesystem' });
+    }
+});
+
+// List available drives (Windows) or root filesystem (Unix)
+app.get('/api/list-drives', authenticateToken, async (req, res) => {
+    try {
+        const drives = [];
+
+        if (process.platform === 'win32') {
+            // Single wmic call to get all drives with volume names
+            let volumeNames = new Map();
+            try {
+                const result = execSync('wmic logicaldisk get DeviceID,VolumeName', {
+                    encoding: 'utf8',
+                    timeout: 5000
+                });
+                const lines = result.trim().split('\n').slice(1); // Skip header
+                for (const line of lines) {
+                    const parts = line.trim().split(/\s+/);
+                    if (parts.length >= 1 && parts[0].match(/^[A-Z]:$/)) {
+                        const deviceId = parts[0];
+                        const volumeName = parts.slice(1).join(' ').trim();
+                        volumeNames.set(deviceId, volumeName || '');
+                    }
+                }
+            } catch {
+                // wmic not available, continue without volume names
+            }
+
+            // Check each drive from A: to Z:
+            const driveLetters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+            for (const letter of driveLetters) {
+                const drivePath = `${letter}:\\`;
+                try {
+                    await fs.promises.access(drivePath);
+                    const volumeName = volumeNames.get(`${letter}:`);
+                    const label = volumeName ? `${letter}: (${volumeName})` : `${letter}:`;
+                    drives.push({
+                        path: drivePath,
+                        name: label,
+                        type: 'drive'
+                    });
+                } catch {
+                    // Drive not accessible, skip
+                }
+            }
+        } else {
+            // Unix: show root and home
+            drives.push({
+                path: '/',
+                name: 'Root',
+                type: 'drive'
+            });
+            drives.push({
+                path: os.homedir(),
+                name: 'Home',
+                type: 'drive'
+            });
+        }
+
+        res.json({ drives });
+    } catch (error) {
+        console.error('Error listing drives:', error);
+        res.status(500).json({ error: 'Failed to list drives' });
     }
 });
 

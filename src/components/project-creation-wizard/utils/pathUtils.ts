@@ -28,7 +28,12 @@ export const getSuggestionRootPath = (inputPath: string): string => {
 
 // Handles root edge cases for Unix-like and Windows paths.
 export const getParentPath = (currentPath: string): string | null => {
-  if (currentPath === '~' || currentPath === '/' || WINDOWS_DRIVE_PATTERN.test(currentPath)) {
+  if (currentPath === '~' || currentPath === '/') {
+    return null;
+  }
+
+  // For Windows drive roots (C:\, D:\, etc.), return null to show drives section
+  if (WINDOWS_DRIVE_PATTERN.test(currentPath)) {
     return null;
   }
 
@@ -41,9 +46,15 @@ export const getParentPath = (currentPath: string): string | null => {
     return `${currentPath.slice(0, 2)}\\`;
   }
 
-  return currentPath.slice(0, lastSeparatorIndex);
+  return currentPath.slice(0, lastSeparatorIndex) || null;
 };
 
+// Check if path is a Windows drive root (C:\, D:\, etc.)
+export const isWindowsDriveRoot = (currentPath: string): boolean => {
+  return WINDOWS_DRIVE_PATTERN.test(currentPath);
+};
+
+// Join folder path with proper separator
 export const joinFolderPath = (basePath: string, folderName: string): string => {
   const normalizedBasePath = basePath.trim().replace(/[\\/]+$/, '');
   const separator =

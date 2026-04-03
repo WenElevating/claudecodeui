@@ -11,6 +11,7 @@ import type { InstallMode } from '../../../../hooks/useVersionCheck';
 import { normalizeProjectForSettings } from '../../utils/utils';
 import type { DeleteProjectConfirmation, SessionDeleteConfirmation, SettingsProject } from '../../types/types';
 import ProjectCreationWizard from '../../../project-creation-wizard';
+import ProjectCreationWizardV2 from '../../../project-creation-wizard/v2/ProjectCreationWizardV2';
 import { useUiVersion } from '../../../../hooks/useUiVersion';
 import SettingsV2 from '../../../settings/view/SettingsV2';
 
@@ -84,10 +85,17 @@ export default function SidebarModals({
     <>
       {showNewProject &&
         ReactDOM.createPortal(
-          <ProjectCreationWizard
-            onClose={onCloseNewProject}
-            onProjectCreated={onProjectCreated}
-          />,
+          useNewUi ? (
+            <ProjectCreationWizardV2
+              onClose={onCloseNewProject}
+              onProjectCreated={onProjectCreated}
+            />
+          ) : (
+            <ProjectCreationWizard
+              onClose={onCloseNewProject}
+              onProjectCreated={onProjectCreated}
+            />
+          ),
           document.body,
         )}
 

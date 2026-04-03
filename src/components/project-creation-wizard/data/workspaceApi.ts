@@ -53,6 +53,17 @@ export const browseFilesystemFolders = async (pathToBrowse: string) => {
   };
 };
 
+export const listAvailableDrives = async () => {
+  const response = await api.get('/list-drives');
+  const data = await parseJson<{ drives: FolderSuggestion[] }>(response);
+
+  if (!response.ok) {
+    throw new Error('Failed to list drives');
+  }
+
+  return data.drives || [];
+};
+
 export const createFolderInFilesystem = async (folderPath: string) => {
   const response = await api.createFolder(folderPath);
   const data = await parseJson<CreateFolderResponse>(response);
