@@ -6,7 +6,7 @@ import SettingsCardV2 from '../v2/SettingsCardV2';
 import SettingsRowV2 from '../v2/SettingsRowV2';
 import SettingsSectionV2 from '../v2/SettingsSectionV2';
 import SettingsToggleV2 from '../v2/SettingsToggleV2';
-import { useUiVersion } from '../../../../hooks/useUiVersion';
+import { useUiPreferences } from '../../../../hooks/useUiPreferences';
 
 type AppearanceSettingsTabV2Props = {
   projectSortOrder: ProjectSortOrder;
@@ -22,7 +22,7 @@ export default function AppearanceSettingsTabV2({
   onCodeEditorSettingChange,
 }: AppearanceSettingsTabV2Props) {
   const { t } = useTranslation('settings');
-  const { useNewUi, setUseNewUi } = useUiVersion();
+  const { preferences, setPreference } = useUiPreferences();
 
   return (
     <div className="space-y-8">
@@ -33,9 +33,20 @@ export default function AppearanceSettingsTabV2({
             description={t('appearanceSettings.uiDesign.newUi.description') || 'Switch to the new Claude Code Mobile style UI design'}
           >
             <SettingsToggleV2
-              checked={useNewUi}
-              onChange={setUseNewUi}
+              checked={preferences.useNewUi}
+              onChange={(value) => setPreference('useNewUi', value)}
               ariaLabel="New UI Design"
+            />
+          </SettingsRowV2>
+
+          <SettingsRowV2
+            label={t('appearanceSettings.uiDesign.mobileToolbar.label') || 'Show Mobile Toolbar'}
+            description={t('appearanceSettings.uiDesign.mobileToolbar.description') || 'Show the bottom navigation toolbar on mobile devices'}
+          >
+            <SettingsToggleV2
+              checked={preferences.showMobileToolbar}
+              onChange={(value) => setPreference('showMobileToolbar', value)}
+              ariaLabel="Show Mobile Toolbar"
             />
           </SettingsRowV2>
         </SettingsCardV2>

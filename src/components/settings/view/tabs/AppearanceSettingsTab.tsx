@@ -6,7 +6,7 @@ import SettingsCard from '../SettingsCard';
 import SettingsRow from '../SettingsRow';
 import SettingsSection from '../SettingsSection';
 import SettingsToggle from '../SettingsToggle';
-import { useUiVersion } from '../../../../hooks/useUiVersion';
+import { useUiPreferences } from '../../../../hooks/useUiPreferences';
 
 type AppearanceSettingsTabProps = {
   projectSortOrder: ProjectSortOrder;
@@ -30,7 +30,7 @@ export default function AppearanceSettingsTab({
   onCodeEditorFontSizeChange,
 }: AppearanceSettingsTabProps) {
   const { t } = useTranslation('settings');
-  const { useNewUi, setUseNewUi } = useUiVersion();
+  const { preferences, setPreference } = useUiPreferences();
 
   return (
     <div className="space-y-8">
@@ -41,9 +41,20 @@ export default function AppearanceSettingsTab({
             description={t('appearanceSettings.uiDesign.newUi.description') || 'Switch to the new Claude Code Mobile style UI design'}
           >
             <SettingsToggle
-              checked={useNewUi}
-              onChange={setUseNewUi}
+              checked={preferences.useNewUi}
+              onChange={(value) => setPreference('useNewUi', value)}
               ariaLabel="New UI Design"
+            />
+          </SettingsRow>
+
+          <SettingsRow
+            label={t('appearanceSettings.uiDesign.mobileToolbar.label') || 'Show Mobile Toolbar'}
+            description={t('appearanceSettings.uiDesign.mobileToolbar.description') || 'Show the bottom navigation toolbar on mobile devices'}
+          >
+            <SettingsToggle
+              checked={preferences.showMobileToolbar}
+              onChange={(value) => setPreference('showMobileToolbar', value)}
+              ariaLabel="Show Mobile Toolbar"
             />
           </SettingsRow>
         </SettingsCard>

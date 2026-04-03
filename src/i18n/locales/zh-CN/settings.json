@@ -138,6 +138,10 @@
       "newUi": {
         "label": "新界面设计 (V2)",
         "description": "切换到新的 Claude Code Mobile 风格界面设计"
+      },
+      "mobileToolbar": {
+        "label": "显示移动端底部工具栏",
+        "description": "在移动设备上显示底部导航工具栏"
       }
     },
     "projectSorting": {

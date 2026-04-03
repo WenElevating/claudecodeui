@@ -7,9 +7,11 @@ import { useWebSocket } from '../../contexts/WebSocketContext';
 import { useDeviceSettings } from '../../hooks/useDeviceSettings';
 import { useSessionProtection } from '../../hooks/useSessionProtection';
 import { useProjectsState } from '../../hooks/useProjectsState';
-import { useUiVersion } from '../../hooks/useUiVersion';
+import { useUiPreferences } from '../../hooks/useUiPreferences';
 import MobileNav from './MobileNav';
 import MobileNavV2 from './MobileNavV2';
+
+const HIDDEN_MOBILE_NAV_STYLE = { '--mobile-nav-total': '0px' } as React.CSSProperties;
 
 export default function AppContent() {
   const navigate = useNavigate();
@@ -18,7 +20,9 @@ export default function AppContent() {
   const { isMobile } = useDeviceSettings({ trackPWA: false });
   const { ws, sendMessage, latestMessage, isConnected } = useWebSocket();
   const wasConnectedRef = useRef(false);
-  const { useNewUi } = useUiVersion();
+  const { preferences } = useUiPreferences();
+  const useNewUi = preferences.useNewUi;
+  const showMobileToolbar = preferences.showMobileToolbar;
 
   const {
     activeSessions,
@@ -128,7 +132,10 @@ export default function AppContent() {
   }, [isConnected, selectedSession?.id, sendMessage]);
 
   return (
-    <div className={`fixed inset-0 flex ${useNewUi ? 'v2-app-bg' : 'bg-background'}`}>
+    <div
+      className={`fixed inset-0 flex ${useNewUi ? 'v2-app-bg' : 'bg-background'}`}
+      style={!showMobileToolbar ? HIDDEN_MOBILE_NAV_STYLE : undefined}
+    >
       {/* Desktop sidebar - show for both V1 and V2 */}
       {!isMobile ? (
         <div className={`h-full flex-shrink-0 ${useNewUi ? 'v2-sidebar' : 'border-r border-border/50'}`}>
@@ -163,7 +170,7 @@ export default function AppContent() {
         </div>
       )}
 
-      <div className={`flex min-w-0 flex-1 flex-col ${isMobile ? 'pb-mobile-nav' : ''}`}>
+      <div className={`flex min-w-0 flex-1 flex-col ${isMobile && showMobileToolbar ? 'pb-mobile-nav' : ''}`}>
         <MainContent
           selectedProject={selectedProject}
           selectedSession={selectedSession}
@@ -189,8 +196,7 @@ export default function AppContent() {
         />
       </div>
 
-      {/* Mobile nav - only show on mobile */}
-      {isMobile && (
+      {isMobile && showMobileToolbar && (
         useNewUi ? (
           <MobileNavV2
             activeTab={activeTab}

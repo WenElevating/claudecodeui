@@ -55,7 +55,7 @@ interface UseChatRealtimeHandlersArgs {
   setCurrentSessionId: (sessionId: string | null) => void;
   setIsLoading: (loading: boolean) => void;
   setCanAbortSession: (canAbort: boolean) => void;
-  setSessionInTerminal: (state: { active: boolean; provider: string | null }) => void;
+  setSessionInTerminal: Dispatch<SetStateAction<{ active: boolean; provider: string | null }>>;
   setClaudeStatus: (status: { text: string; tokens: number; can_interrupt: boolean } | null) => void;
   setTokenBudget: (budget: Record<string, unknown> | null) => void;
   setPendingPermissionRequests: Dispatch<SetStateAction<PendingPermissionRequest[]>>;

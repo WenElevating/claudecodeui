@@ -138,6 +138,10 @@
       "newUi": {
         "label": "New UI Design (V2)",
         "description": "Switch to the new Claude Code Mobile style UI design"
+      },
+      "mobileToolbar": {
+        "label": "Show Mobile Toolbar",
+        "description": "Show the bottom navigation toolbar on mobile devices"
       }
     },
     "projectSorting": {
