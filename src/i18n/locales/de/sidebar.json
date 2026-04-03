@@ -96,6 +96,8 @@
     "deleteSessionError": "Fehler beim Löschen der Sitzung. Bitte erneut versuchen.",
     "renameSessionFailed": "Sitzung konnte nicht umbenannt werden. Bitte erneut versuchen.",
     "renameSessionError": "Fehler beim Umbenennen der Sitzung. Bitte erneut versuchen.",
+    "renameProjectFailed": "Projekt konnte nicht umbenannt werden. Bitte erneut versuchen.",
+    "renameProjectError": "Fehler beim Umbenennen des Projekts. Bitte erneut versuchen.",
     "deleteProjectFailed": "Projekt konnte nicht gelöscht werden. Bitte erneut versuchen.",
     "deleteProjectError": "Fehler beim Löschen des Projekts. Bitte erneut versuchen.",
     "createProjectFailed": "Projekt konnte nicht erstellt werden. Bitte erneut versuchen.",

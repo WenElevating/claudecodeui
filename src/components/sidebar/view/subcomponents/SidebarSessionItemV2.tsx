@@ -64,13 +64,6 @@ export default function SidebarSessionItemV2({
 
   return (
     <div className="group relative">
-      {/* Active indicator dot */}
-      {sessionView.isActive && (
-        <div className="absolute left-1 top-1/2 -translate-y-1/2 z-10">
-          <div className="h-2 w-2 animate-pulse rounded-full bg-emerald-500" />
-        </div>
-      )}
-
       {/* V2 Mobile card */}
       <div className="md:hidden">
         <div
@@ -82,12 +75,19 @@ export default function SidebarSessionItemV2({
           onClick={selectMobileSession}
         >
           <div className="flex items-center gap-2.5">
-            {/* Provider logo */}
-            <div className={cn(
-              'w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0',
-              isSelected ? 'bg-amber-100' : 'bg-gray-100',
-            )}>
-              <SessionProviderLogo provider={session.__provider} className="h-3.5 w-3.5" />
+            {/* Provider logo with active indicator */}
+            <div className="relative flex-shrink-0">
+              <div className={cn(
+                'w-6 h-6 rounded-md flex items-center justify-center',
+                isSelected ? 'bg-amber-100' : 'bg-gray-100',
+              )}>
+                <SessionProviderLogo provider={session.__provider} className="h-3.5 w-3.5" />
+              </div>
+              {sessionView.isActive && (
+                <div className="absolute top-full mt-3 left-1/2 -translate-x-1/2">
+                  <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
+                </div>
+              )}
             </div>
 
             {/* Content */}
@@ -130,7 +130,15 @@ export default function SidebarSessionItemV2({
           )}
           onClick={() => onSessionSelect(session, project.name)}
         >
-          <SessionProviderLogo provider={session.__provider} className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" />
+          {/* Provider logo with active indicator */}
+          <div className="relative flex-shrink-0 mt-0.5">
+            <SessionProviderLogo provider={session.__provider} className="h-3.5 w-3.5" />
+            {sessionView.isActive && (
+              <div className="absolute top-full mt-3 left-1/2 -translate-x-1/2">
+                <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
+              </div>
+            )}
+          </div>
           <div className="min-w-0 flex-1">
             <div className="truncate text-sm font-medium text-gray-800 dark:text-gray-200">
               {sessionView.sessionName}

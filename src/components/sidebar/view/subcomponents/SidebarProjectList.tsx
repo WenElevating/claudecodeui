@@ -21,6 +21,7 @@ export type SidebarProjectListProps = {
   loadingProgress: LoadingProgress | null;
   expandedProjects: Set<string>;
   editingProject: string | null;
+  isRenamingProject: boolean;
   editingName: string;
   loadingSessions: LoadingSessionsByProject;
   initialSessionsLoaded: Set<string>;
@@ -65,6 +66,7 @@ export default function SidebarProjectList({
   loadingProgress,
   expandedProjects,
   editingProject,
+  isRenamingProject,
   editingName,
   loadingSessions,
   initialSessionsLoaded,
@@ -141,6 +143,7 @@ export default function SidebarProjectList({
                 selectedSession={selectedSession}
                 isExpanded={expandedProjects.has(project.name)}
                 isDeleting={deletingProjects.has(project.name)}
+                isRenaming={isRenamingProject && editingProject === project.name}
                 isStarred={isProjectStarred(project.name)}
                 editingProject={editingProject}
                 editingName={editingName}

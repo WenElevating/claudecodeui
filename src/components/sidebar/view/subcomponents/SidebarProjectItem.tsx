@@ -14,6 +14,7 @@ type SidebarProjectItemProps = {
   selectedSession: ProjectSession | null;
   isExpanded: boolean;
   isDeleting: boolean;
+  isRenaming: boolean;
   isStarred: boolean;
   editingProject: string | null;
   editingName: string;
@@ -64,6 +65,7 @@ export default function SidebarProjectItem({
   selectedSession,
   isExpanded,
   isDeleting,
+  isRenaming,
   isStarred,
   editingProject,
   editingName,
@@ -146,30 +148,47 @@ export default function SidebarProjectItem({
 
                 <div className="min-w-0 flex-1">
                   {isEditing ? (
-                    <input
-                      type="text"
-                      value={editingName}
-                      onChange={(event) => onEditingNameChange(event.target.value)}
-                      className="w-full rounded-lg border-2 border-primary/40 bg-background px-3 py-2 text-sm text-foreground shadow-sm transition-all duration-200 focus:border-primary focus:shadow-md focus:outline-none"
-                      placeholder={t('projects.projectNamePlaceholder')}
-                      autoFocus
-                      autoComplete="off"
-                      onClick={(event) => event.stopPropagation()}
-                      onKeyDown={(event) => {
-                        if (event.key === 'Enter') {
-                          saveProjectName();
-                        }
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={editingName}
+                        onChange={(event) => onEditingNameChange(event.target.value)}
+                        className="w-full rounded-lg border-2 border-primary/40 bg-background px-3 py-2 pr-8 text-sm text-foreground shadow-sm transition-all duration-200 focus:border-primary focus:shadow-md focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                        placeholder={t('projects.projectNamePlaceholder')}
+                        autoFocus
+                        autoComplete="off"
+                        disabled={isRenaming}
+                        onClick={(event) => event.stopPropagation()}
+                        onBlur={() => {
+                          if (isRenaming) return;
+                          if (editingName.trim() !== '') {
+                            saveProjectName();
+                          } else {
+                            onCancelEditingProject();
+                          }
+                        }}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter') {
+                            event.preventDefault();
+                            if (!isRenaming) saveProjectName();
+                          }
 
-                        if (event.key === 'Escape') {
-                          onCancelEditingProject();
-                        }
-                      }}
-                      style={{
-                        fontSize: '16px',
-                        WebkitAppearance: 'none',
-                        borderRadius: '8px',
-                      }}
-                    />
+                          if (event.key === 'Escape') {
+                            onCancelEditingProject();
+                          }
+                        }}
+                        style={{
+                          fontSize: '16px',
+                          WebkitAppearance: 'none',
+                          borderRadius: '8px',
+                        }}
+                      />
+                      {isRenaming && (
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                          <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                        </div>
+                      )}
+                    </div>
                   ) : (
                     <>
                       <div className="flex min-w-0 flex-1 items-center justify-between">
@@ -289,22 +308,39 @@ export default function SidebarProjectItem({
             <div className="min-w-0 flex-1 text-left">
               {isEditing ? (
                 <div className="space-y-1">
-                  <input
-                    type="text"
-                    value={editingName}
-                    onChange={(event) => onEditingNameChange(event.target.value)}
-                    className="w-full rounded border border-border bg-background px-2 py-1 text-sm text-foreground focus:ring-2 focus:ring-primary/20"
-                    placeholder={t('projects.projectNamePlaceholder')}
-                    autoFocus
-                    onKeyDown={(event) => {
-                      if (event.key === 'Enter') {
-                        saveProjectName();
-                      }
-                      if (event.key === 'Escape') {
-                        onCancelEditingProject();
-                      }
-                    }}
-                  />
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={editingName}
+                      onChange={(event) => onEditingNameChange(event.target.value)}
+                      className="w-full rounded border border-border bg-background px-2 py-1 pr-7 text-sm text-foreground focus:ring-2 focus:ring-primary/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                      placeholder={t('projects.projectNamePlaceholder')}
+                      autoFocus
+                      disabled={isRenaming}
+                      onBlur={() => {
+                        if (isRenaming) return;
+                        if (editingName.trim() !== '') {
+                          saveProjectName();
+                        } else {
+                          onCancelEditingProject();
+                        }
+                      }}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter') {
+                          event.preventDefault();
+                          if (!isRenaming) saveProjectName();
+                        }
+                        if (event.key === 'Escape') {
+                          onCancelEditingProject();
+                        }
+                      }}
+                    />
+                    {isRenaming && (
+                      <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                        <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                      </div>
+                    )}
+                  </div>
                   <div className="truncate text-xs text-muted-foreground" title={project.fullPath}>
                     {project.fullPath}
                   </div>

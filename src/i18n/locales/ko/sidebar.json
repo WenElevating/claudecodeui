@@ -95,6 +95,8 @@
     "deleteSessionError": "세션 삭제 오류. 다시 시도해주세요.",
     "renameSessionFailed": "세션 이름 변경 실패. 다시 시도해주세요.",
     "renameSessionError": "세션 이름 변경 오류. 다시 시도해주세요.",
+    "renameProjectFailed": "프로젝트 이름 변경 실패. 다시 시도해주세요.",
+    "renameProjectError": "프로젝트 이름 변경 오류. 다시 시도해주세요.",
     "deleteProjectFailed": "프로젝트 삭제 실패. 다시 시도해주세요.",
     "deleteProjectError": "프로젝트 삭제 오류. 다시 시도해주세요.",
     "createProjectFailed": "프로젝트 생성 실패. 다시 시도해주세요.",

@@ -16,6 +16,7 @@ type SidebarProjectItemProps = {
   selectedSession: ProjectSession | null;
   isExpanded: boolean;
   isDeleting: boolean;
+  isRenaming: boolean;
   isStarred: boolean;
   editingProject: string | null;
   editingName: string;
@@ -67,6 +68,7 @@ export default function SidebarProjectItemV2({
   selectedSession,
   isExpanded,
   isDeleting,
+  isRenaming,
   isStarred,
   editingProject,
   editingName,
@@ -167,21 +169,42 @@ export default function SidebarProjectItemV2({
               {/* Content */}
               <div className="min-w-0 flex-1">
                 {isEditing ? (
-                  <input
-                    type="text"
-                    value={editingName}
-                    onChange={(event) => onEditingNameChange(event.target.value)}
-                    className="w-full rounded-lg border border-amber-300 bg-white px-3 py-2 text-sm text-gray-800 focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-100"
-                    placeholder={t('projects.projectNamePlaceholder')}
-                    autoFocus
-                    autoComplete="off"
-                    onClick={(event) => event.stopPropagation()}
-                    onKeyDown={(event) => {
-                      if (event.key === 'Enter') saveProjectName();
-                      if (event.key === 'Escape') onCancelEditingProject();
-                    }}
-                    style={{ fontSize: '16px' }}
-                  />
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={editingName}
+                      onChange={(event) => onEditingNameChange(event.target.value)}
+                      className="w-full rounded-lg border border-amber-300 bg-white px-3 py-2 text-sm text-gray-800 focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                      placeholder={t('projects.projectNamePlaceholder')}
+                      autoFocus
+                      autoComplete="off"
+                      disabled={isRenaming}
+                      onClick={(event) => event.stopPropagation()}
+                      onBlur={() => {
+                        if (isRenaming) return;
+                        if (editingName.trim() !== '') {
+                          saveProjectName();
+                        } else {
+                          onCancelEditingProject();
+                        }
+                      }}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter') {
+                          event.preventDefault();
+                          if (!isRenaming) saveProjectName();
+                        }
+                        if (event.key === 'Escape') {
+                          onCancelEditingProject();
+                        }
+                      }}
+                      style={{ fontSize: '16px' }}
+                    />
+                    {isRenaming && (
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-amber-500 border-t-transparent" />
+                      </div>
+                    )}
+                  </div>
                 ) : (
                   <>
                     <div className="flex items-center gap-2">
@@ -239,19 +262,40 @@ export default function SidebarProjectItemV2({
               </div>
               <div className="min-w-0 flex-1 overflow-hidden">
                 {isEditing ? (
-                  <input
-                    type="text"
-                    value={editingName}
-                    onChange={(event) => onEditingNameChange(event.target.value)}
-                    className="w-full rounded-lg border border-gray-200 bg-white px-2 py-1 text-sm text-gray-800 focus:ring-2 focus:ring-amber-100 focus:border-amber-300"
-                    placeholder={t('projects.projectNamePlaceholder')}
-                    autoFocus
-                    onClick={(event) => event.stopPropagation()}
-                    onKeyDown={(event) => {
-                      if (event.key === 'Enter') saveProjectName();
-                      if (event.key === 'Escape') onCancelEditingProject();
-                    }}
-                  />
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={editingName}
+                      onChange={(event) => onEditingNameChange(event.target.value)}
+                      className="w-full rounded-lg border border-gray-200 bg-white px-2 py-1 pr-8 text-sm text-gray-800 focus:ring-2 focus:ring-amber-100 focus:border-amber-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                      placeholder={t('projects.projectNamePlaceholder')}
+                      autoFocus
+                      disabled={isRenaming}
+                      onClick={(event) => event.stopPropagation()}
+                      onBlur={() => {
+                        if (isRenaming) return;
+                        if (editingName.trim() !== '') {
+                          saveProjectName();
+                        } else {
+                          onCancelEditingProject();
+                        }
+                      }}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter') {
+                          event.preventDefault();
+                          if (!isRenaming) saveProjectName();
+                        }
+                        if (event.key === 'Escape') {
+                          onCancelEditingProject();
+                        }
+                      }}
+                    />
+                    {isRenaming && (
+                      <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                        <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-amber-500 border-t-transparent" />
+                      </div>
+                    )}
+                  </div>
                 ) : (
                   <>
                     <div className="flex items-center gap-2 min-w-0">

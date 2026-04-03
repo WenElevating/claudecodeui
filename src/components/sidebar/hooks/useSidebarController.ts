@@ -93,6 +93,8 @@ export function useSidebarController({
 }: UseSidebarControllerArgs) {
   const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set());
   const [editingProject, setEditingProject] = useState<string | null>(null);
+  const [isRenamingProject, setIsRenamingProject] = useState(false);
+  const isRenamingRef = useRef(false);
   const [showNewProject, setShowNewProject] = useState(false);
   const [editingName, setEditingName] = useState('');
   const [loadingSessions, setLoadingSessions] = useState<LoadingSessionsByProject>({});
@@ -375,9 +377,14 @@ export function useSidebarController({
 
   const saveProjectName = useCallback(
     async (projectName: string) => {
+      if (isRenamingRef.current) return;
+      isRenamingRef.current = true;
+      setIsRenamingProject(true);
       try {
         const response = await api.renameProject(projectName, editingName);
         if (response.ok) {
+          setEditingProject(null);
+          setEditingName('');
           if (window.refreshProjects) {
             await window.refreshProjects();
           } else {
@@ -385,15 +392,17 @@ export function useSidebarController({
           }
         } else {
           console.error('Failed to rename project');
+          alert(t('messages.renameProjectFailed'));
         }
       } catch (error) {
         console.error('Error renaming project:', error);
+        alert(t('messages.renameProjectError'));
       } finally {
-        setEditingProject(null);
-        setEditingName('');
+        setIsRenamingProject(false);
+        isRenamingRef.current = false;
       }
     },
-    [editingName],
+    [editingName, t],
   );
 
   const showDeleteSessionConfirmation = useCallback(
@@ -583,6 +592,7 @@ export function useSidebarController({
     isSidebarCollapsed,
     expandedProjects,
     editingProject,
+    isRenamingProject,
     showNewProject,
     editingName,
     loadingSessions,
