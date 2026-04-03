@@ -152,7 +152,7 @@ const MessageComponentV2 = memo(({ message, prevMessage, createDiff, onFileOpen,
         </div>
       ) : (
         /* AI/Error/Tool Messages - Avatar + Content */
-        <div className={`flex gap-3 ${message.isThinking ? 'w-full' : ''}`}>
+        <div className={`flex max-w-full gap-3 overflow-hidden ${message.isThinking ? 'w-full' : ''}`}>
           {/* Avatar */}
           {!isGrouped && (
             message.type === 'error' ? (
