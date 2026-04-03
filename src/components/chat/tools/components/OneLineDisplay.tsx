@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { copyTextToClipboard } from '../../../../utils/clipboard';
 
 type ActionType = 'copy' | 'open-file' | 'jump-to-results' | 'none';
@@ -50,20 +50,29 @@ export const OneLineDisplay: React.FC<OneLineDisplayProps> = ({
   toolId
 }) => {
   const [copied, setCopied] = useState(false);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isTerminal = style === 'terminal';
 
-  const handleAction = async () => {
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
+
+  const handleAction = useCallback(async () => {
     if (action === 'copy' && value) {
       const didCopy = await copyTextToClipboard(value);
       if (!didCopy) {
         return;
       }
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      timeoutRef.current = setTimeout(() => setCopied(false), 2000);
     } else if (onAction) {
       onAction();
     }
-  };
+  }, [action, value, onAction]);
 
   const renderCopyButton = () => (
     <button

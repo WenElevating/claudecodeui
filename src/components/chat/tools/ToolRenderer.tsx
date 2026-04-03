@@ -2,7 +2,7 @@ import React, { memo, useMemo, useCallback } from 'react';
 import type { Project } from '../../../types/app';
 import type { SubagentChildTool } from '../types/types';
 import { getToolConfig } from './configs/toolConfigs';
-import { OneLineDisplay, CollapsibleDisplay, ToolDiffViewer, MarkdownContent, FileListContent, TodoListContent, TaskListContent, TextContent, QuestionAnswerContent, SubagentContainer } from './components';
+import { OneLineDisplay, OneLineDisplayV2, CollapsibleDisplay, ToolDiffViewer, MarkdownContent, FileListContent, TodoListContent, TaskListContent, TextContent, QuestionAnswerContent, SubagentContainer } from './components';
 
 type DiffLine = {
   type: string;
@@ -28,6 +28,7 @@ interface ToolRendererProps {
     currentToolIndex: number;
     isComplete: boolean;
   };
+  useV2Style?: boolean;
 }
 
 function getToolCategory(toolName: string): string {
@@ -59,7 +60,8 @@ export const ToolRenderer: React.FC<ToolRendererProps> = memo(({
   showRawParameters = false,
   rawToolInput,
   isSubagentContainer,
-  subagentState
+  subagentState,
+  useV2Style = false
 }) => {
   const config = getToolConfig(toolName);
   const displayConfig: any = mode === 'input' ? config.input : config.result;
@@ -100,23 +102,25 @@ export const ToolRenderer: React.FC<ToolRendererProps> = memo(({
     const value = displayConfig.getValue?.(parsedData) || '';
     const secondary = displayConfig.getSecondary?.(parsedData);
 
-    return (
-      <OneLineDisplay
-        toolName={toolName}
-        toolResult={toolResult}
-        toolId={toolId}
-        icon={displayConfig.icon}
-        label={displayConfig.label}
-        value={value}
-        secondary={secondary}
-        action={displayConfig.action}
-        onAction={handleAction}
-        style={displayConfig.style}
-        wrapText={displayConfig.wrapText}
-        colorScheme={displayConfig.colorScheme}
-        resultId={mode === 'input' ? `tool-result-${toolId}` : undefined}
-      />
-    );
+    const oneLineProps = {
+      toolName,
+      toolResult,
+      toolId,
+      icon: displayConfig.icon,
+      label: displayConfig.label,
+      value,
+      secondary,
+      action: displayConfig.action,
+      onAction: handleAction,
+      style: displayConfig.style,
+      wrapText: displayConfig.wrapText,
+      colorScheme: displayConfig.colorScheme,
+      resultId: mode === 'input' ? `tool-result-${toolId}` : undefined,
+    };
+
+    return useV2Style
+      ? <OneLineDisplayV2 {...oneLineProps} />
+      : <OneLineDisplay {...oneLineProps} />;
   }
 
   if (displayConfig.type === 'collapsible') {

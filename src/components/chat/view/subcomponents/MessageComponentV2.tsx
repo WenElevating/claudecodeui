@@ -211,6 +211,7 @@ const MessageComponentV2 = memo(({ message, prevMessage, createDiff, onFileOpen,
                     rawToolInput={typeof message.toolInput === 'string' ? message.toolInput : undefined}
                     isSubagentContainer={message.isSubagentContainer}
                     subagentState={message.subagentState}
+                    useV2Style={true}
                   />
                 )}
 
@@ -268,6 +269,7 @@ const MessageComponentV2 = memo(({ message, prevMessage, createDiff, onFileOpen,
                         createDiff={createDiff}
                         selectedProject={selectedProject}
                         autoExpandTools={autoExpandTools}
+                        useV2Style={true}
                       />
                     </div>
                   )
