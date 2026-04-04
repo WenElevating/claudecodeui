@@ -63,6 +63,8 @@ interface UseChatRealtimeHandlersArgs {
   streamBufferRef: MutableRefObject<string>;
   streamTimerRef: MutableRefObject<number | null>;
   accumulatedStreamRef: MutableRefObject<string>;
+  thinkingTimerRef: MutableRefObject<number | null>;
+  accumulatedThinkingRef: MutableRefObject<string>;
   onSessionInactive?: (sessionId?: string | null) => void;
   onSessionProcessing?: (sessionId?: string | null) => void;
   onSessionNotProcessing?: (sessionId?: string | null) => void;
@@ -93,6 +95,8 @@ export function useChatRealtimeHandlers({
   streamBufferRef,
   streamTimerRef,
   accumulatedStreamRef,
+  thinkingTimerRef,
+  accumulatedThinkingRef,
   onSessionInactive,
   onSessionProcessing,
   onSessionNotProcessing,
@@ -189,6 +193,51 @@ export function useChatRealtimeHandlers({
 
     const sid = msg.sessionId || activeViewSessionId;
 
+    // --- Thinking stream: buffer for performance ---
+    if (msg.kind === 'thinking_start') {
+      // Clear any previous thinking state
+      accumulatedThinkingRef.current = '';
+      if (thinkingTimerRef.current) {
+        clearTimeout(thinkingTimerRef.current);
+        thinkingTimerRef.current = null;
+      }
+      return;
+    }
+
+    if (msg.kind === 'thinking_delta') {
+      const thinkingContent = msg.content || '';
+      if (!thinkingContent) return;
+      accumulatedThinkingRef.current += thinkingContent;
+      if (!thinkingTimerRef.current) {
+        thinkingTimerRef.current = window.setTimeout(() => {
+          thinkingTimerRef.current = null;
+          if (sid) {
+            sessionStore.updateThinkingStream(sid, accumulatedThinkingRef.current, provider);
+          }
+        }, 50); // Faster updates for thinking (feels more responsive)
+      }
+      // Also route to store for non-active sessions
+      if (sid && sid !== activeViewSessionId) {
+        sessionStore.appendRealtime(sid, msg as NormalizedMessage);
+      }
+      return;
+    }
+
+    if (msg.kind === 'thinking_end' || (msg.kind === 'stream_end' && accumulatedThinkingRef.current)) {
+      // Check if this is the end of a thinking block
+      if (thinkingTimerRef.current) {
+        clearTimeout(thinkingTimerRef.current);
+        thinkingTimerRef.current = null;
+      }
+      if (sid && accumulatedThinkingRef.current) {
+        sessionStore.updateThinkingStream(sid, accumulatedThinkingRef.current, provider);
+        sessionStore.finalizeThinking(sid);
+      }
+      accumulatedThinkingRef.current = '';
+      // Don't return here - stream_end might also signal text stream end
+      if (msg.kind === 'thinking_end') return;
+    }
+
     // --- Streaming: buffer for performance ---
     if (msg.kind === 'stream_delta') {
       const text = msg.content || '';
@@ -265,6 +314,17 @@ export function useChatRealtimeHandlers({
         accumulatedStreamRef.current = '';
         streamBufferRef.current = '';
 
+        // Flush any remaining thinking state
+        if (thinkingTimerRef.current) {
+          clearTimeout(thinkingTimerRef.current);
+          thinkingTimerRef.current = null;
+        }
+        if (sid && accumulatedThinkingRef.current) {
+          sessionStore.updateThinkingStream(sid, accumulatedThinkingRef.current, provider);
+          sessionStore.finalizeThinking(sid);
+        }
+        accumulatedThinkingRef.current = '';
+  
         setIsLoading(false);
         setCanAbortSession(false);
         setClaudeStatus(null);
@@ -367,6 +427,8 @@ export function useChatRealtimeHandlers({
     streamBufferRef,
     streamTimerRef,
     accumulatedStreamRef,
+    thinkingTimerRef,
+    accumulatedThinkingRef,
     onSessionInactive,
     onSessionProcessing,
     onSessionNotProcessing,

@@ -197,6 +197,9 @@ function mapCliOptionsToSDK(options = {}) {
   sdkOptions.model = options.model || CLAUDE_MODELS.DEFAULT;
   // Model logged at query start below
 
+  // Enable adaptive thinking for extended reasoning
+  sdkOptions.thinking = { type: 'adaptive' };
+
   // Map system prompt configuration
   sdkOptions.systemPrompt = {
     type: 'preset',

@@ -10,6 +10,12 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import type { SessionProvider } from '../types/app';
 import { authenticatedFetch } from '../utils/api';
+import {
+  THINKING_STREAM_PREFIX,
+  THINKING_FINAL_PREFIX,
+  TEXT_STREAM_PREFIX,
+  TEXT_FINAL_PREFIX,
+} from '../shared/messageIdPrefixes';
 
 // ─── NormalizedMessage (mirrors server/adapters/types.js) ────────────────────
 
@@ -18,6 +24,9 @@ export type MessageKind =
   | 'tool_use'
   | 'tool_result'
   | 'thinking'
+  | 'thinking_start'
+  | 'thinking_delta'
+  | 'thinking_end'
   | 'stream_delta'
   | 'stream_end'
   | 'error'
@@ -326,8 +335,13 @@ export function useSessionStore() {
       slot.total = data.total ?? slot.serverMessages.length;
       slot.hasMore = Boolean(data.hasMore);
       slot.fetchedAt = Date.now();
-      // drop realtime messages that the server has caught up with to prevent unbounded growth.
-      slot.realtimeMessages = [];
+      // Preserve finalized thinking messages that the server may not have
+      const preservedThinking = slot.realtimeMessages.filter(
+        m => m.id.startsWith(THINKING_FINAL_PREFIX) && !m.id.startsWith(THINKING_STREAM_PREFIX)
+      );
+      const serverIds = new Set((data.messages || []).map((m: NormalizedMessage) => m.id));
+      const nonDupPreserved = preservedThinking.filter(m => !serverIds.has(m.id));
+      slot.realtimeMessages = nonDupPreserved;
       recomputeMergedIfNeeded(slot);
       notify(sessionId);
     } catch (error) {
@@ -359,7 +373,7 @@ export function useSessionStore() {
    */
   const updateStreaming = useCallback((sessionId: string, accumulatedText: string, msgProvider: SessionProvider) => {
     const slot = getSlot(sessionId);
-    const streamId = `__streaming_${sessionId}`;
+    const streamId = `${TEXT_STREAM_PREFIX}${sessionId}`;
     const msg: NormalizedMessage = {
       id: streamId,
       sessionId,
@@ -386,16 +400,64 @@ export function useSessionStore() {
   const finalizeStreaming = useCallback((sessionId: string) => {
     const slot = storeRef.current.get(sessionId);
     if (!slot) return;
-    const streamId = `__streaming_${sessionId}`;
+    const streamId = `${TEXT_STREAM_PREFIX}${sessionId}`;
     const idx = slot.realtimeMessages.findIndex(m => m.id === streamId);
     if (idx >= 0) {
       const stream = slot.realtimeMessages[idx];
       slot.realtimeMessages = [...slot.realtimeMessages];
       slot.realtimeMessages[idx] = {
         ...stream,
-        id: `text_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+        id: `${TEXT_FINAL_PREFIX}${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
         kind: 'text',
         role: 'assistant',
+      };
+      recomputeMergedIfNeeded(slot);
+      notify(sessionId);
+    }
+  }, [notify]);
+
+  /**
+   * Update or create a thinking stream message (accumulated thinking content).
+   * Uses a well-known ID so subsequent calls replace the same message.
+   */
+  const updateThinkingStream = useCallback((sessionId: string, accumulatedThinking: string, msgProvider: SessionProvider) => {
+    const slot = getSlot(sessionId);
+    const thinkingId = `${THINKING_STREAM_PREFIX}${sessionId}`;
+    const msg: NormalizedMessage = {
+      id: thinkingId,
+      sessionId,
+      timestamp: new Date().toISOString(),
+      provider: msgProvider,
+      kind: 'thinking',
+      content: accumulatedThinking,
+    };
+    const idx = slot.realtimeMessages.findIndex(m => m.id === thinkingId);
+    if (idx >= 0) {
+      slot.realtimeMessages = [...slot.realtimeMessages];
+      slot.realtimeMessages[idx] = msg;
+    } else {
+      slot.realtimeMessages = [...slot.realtimeMessages, msg];
+    }
+    recomputeMergedIfNeeded(slot);
+    notify(sessionId);
+  }, [getSlot, notify]);
+
+  /**
+   * Finalize thinking: convert the streaming thinking message to a regular thinking message.
+   * The well-known thinking ID is replaced with a unique thinking message ID.
+   */
+  const finalizeThinking = useCallback((sessionId: string) => {
+    const slot = storeRef.current.get(sessionId);
+    if (!slot) return;
+    const thinkingId = `${THINKING_STREAM_PREFIX}${sessionId}`;
+    const idx = slot.realtimeMessages.findIndex(m => m.id === thinkingId);
+    if (idx >= 0) {
+      const thinking = slot.realtimeMessages[idx];
+      slot.realtimeMessages = [...slot.realtimeMessages];
+      slot.realtimeMessages[idx] = {
+        ...thinking,
+        id: `${THINKING_FINAL_PREFIX}${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+        kind: 'thinking',
       };
       recomputeMergedIfNeeded(slot);
       notify(sessionId);
@@ -441,6 +503,8 @@ export function useSessionStore() {
     isStale,
     updateStreaming,
     finalizeStreaming,
+    updateThinkingStream,
+    finalizeThinking,
     clearRealtime,
     getMessages,
     getSessionSlot,
@@ -448,6 +512,7 @@ export function useSessionStore() {
     getSlot, has, fetchFromServer, fetchMore,
     appendRealtime, appendRealtimeBatch, refreshFromServer,
     setActiveSession, setStatus, isStale, updateStreaming, finalizeStreaming,
+    updateThinkingStream, finalizeThinking,
     clearRealtime, getMessages, getSessionSlot,
   ]);
 }

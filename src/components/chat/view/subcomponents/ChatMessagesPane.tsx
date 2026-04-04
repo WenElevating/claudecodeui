@@ -1,15 +1,14 @@
-import React, { useCallback, useRef } from 'react';
+import React, { useCallback, useRef, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { Dispatch, RefObject, SetStateAction } from 'react';
 import type { ChatMessage } from '../../types/types';
 import type { Project, ProjectSession, SessionProvider } from '../../../../types/app';
 import { getIntrinsicMessageKey } from '../../utils/messageKeys';
+import { useUiVersion } from '../../../../hooks/useUiVersion';
+import { cn } from '../../../../lib/utils';
 import MessageComponent from './MessageComponent';
 import MessageComponentV2 from './MessageComponentV2';
 import ProviderSelectionEmptyState from './ProviderSelectionEmptyState';
-import AssistantThinkingIndicator from './AssistantThinkingIndicator';
-import { useUiVersion } from '../../../../hooks/useUiVersion';
-import { cn } from '../../../../lib/utils';
 
 interface ChatMessagesPaneProps {
   scrollContainerRef: RefObject<HTMLDivElement>;
@@ -251,7 +250,15 @@ function ChatMessagesPane({
           )}
 
           {visibleMessages.map((message, index) => {
-            const prevMessage = index > 0 ? visibleMessages[index - 1] : null;
+            // Find the previous visible message, skipping hidden thinking messages
+            let prevMessage = null;
+            for (let i = index - 1; i >= 0; i--) {
+              const prev = visibleMessages[i];
+              if (!(prev.isThinking && !showThinking)) {
+                prevMessage = prev;
+                break;
+              }
+            }
             const MessageComp = useNewUi ? MessageComponentV2 : MessageComponent;
             return (
               <MessageComp
@@ -272,8 +279,6 @@ function ChatMessagesPane({
           })}
         </>
       )}
-
-      {isLoading && <AssistantThinkingIndicator selectedProvider={provider} />}
     </div>
   );
 }

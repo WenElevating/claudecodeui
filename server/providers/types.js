@@ -17,8 +17,8 @@
 // ─── Message Kind ────────────────────────────────────────────────────────────
 
 /**
- * @typedef {'text' | 'tool_use' | 'tool_result' | 'thinking' | 'stream_delta' | 'stream_end'
- *   | 'error' | 'complete' | 'status' | 'permission_request' | 'permission_cancelled'
+ * @typedef {'text' | 'tool_use' | 'tool_result' | 'thinking' | 'thinking_start' | 'thinking_delta' | 'thinking_end'
+ *   | 'stream_delta' | 'stream_end' | 'error' | 'complete' | 'status' | 'permission_request' | 'permission_cancelled'
  *   | 'session_created' | 'interactive_prompt' | 'task_notification'} MessageKind
  */
 
@@ -36,7 +36,10 @@
  * - text:                 role ('user'|'assistant'), content, images?
  * - tool_use:             toolName, toolInput, toolId
  * - tool_result:          toolId, content, isError
- * - thinking:             content
+ * - thinking:             content (persisted thinking block from history)
+ * - thinking_start:       (no extra fields) - signals start of streaming thinking
+ * - thinking_delta:       content - incremental thinking content
+ * - thinking_end:         (no extra fields) - signals end of streaming thinking
  * - stream_delta:         content
  * - stream_end:           (no extra fields)
  * - error:                content

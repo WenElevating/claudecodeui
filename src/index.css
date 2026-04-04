@@ -1749,6 +1749,196 @@
     background: hsl(var(--claude-surface) / 0.5);
   }
 
+  /* Inline Thinking Block - rendered within message flow like a normal message */
+  .thinking-inline-block {
+    width: 100%;
+  }
+
+  /* Header row: avatar + provider + stats */
+  .thinking-inline-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+  }
+
+  .thinking-inline-header-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .thinking-inline-header-stats {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .thinking-inline-stat-chip {
+    font-size: 11px;
+    color: hsl(var(--claude-text-muted));
+    font-variant-numeric: tabular-nums;
+    padding: 2px 6px;
+    background: hsl(var(--claude-tertiary));
+    border-radius: 4px;
+    border: 1px solid hsl(var(--claude-border));
+  }
+
+  .dark .thinking-inline-stat-chip {
+    border-color: hsl(var(--claude-border-default));
+  }
+
+  /* Avatar */
+  .thinking-inline-avatar {
+    position: relative;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    border: 1px solid hsl(var(--claude-border-default));
+    background: hsl(var(--claude-tertiary));
+    flex-shrink: 0;
+  }
+
+  .thinking-inline-logo {
+    width: 16px;
+    height: 16px;
+  }
+
+  .thinking-inline-animated-icon {
+    position: absolute;
+    top: -5px;
+    right: -6px;
+    font-size: 11px;
+    line-height: 1;
+    background: linear-gradient(135deg, #8b5cf6, #3b82f6, #06b6d4);
+    background-size: 200% 200%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: thinking-icon-pulse 1.5s ease-in-out infinite, gradient-shift 2s ease infinite;
+  }
+
+  /* Provider name */
+  .thinking-inline-provider {
+    font-weight: 600;
+    font-size: 12px;
+    color: hsl(var(--claude-text));
+    letter-spacing: -0.01em;
+  }
+
+  /* Live badge */
+  .thinking-inline-badge-live {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 7px;
+    border-radius: 999px;
+    background: hsl(160, 84%, 39% / 0.12);
+    color: hsl(160, 84%, 42%);
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .dark .thinking-inline-badge-live {
+    color: hsl(160, 84%, 55%);
+    background: hsl(160, 84%, 39% / 0.18);
+  }
+
+  .thinking-inline-pulse-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: hsl(160, 84%, 42%);
+    animation: thinking-pulse 1.5s ease-in-out infinite;
+  }
+
+  .dark .thinking-inline-pulse-dot {
+    background: hsl(160, 84%, 55%);
+  }
+
+  /* Content box */
+  .thinking-inline-content-box {
+    background: hsl(var(--claude-surface) / 0.7);
+    border: 1px solid hsl(var(--claude-border));
+    border-radius: 8px;
+    padding: 8px 12px;
+    min-height: 32px;
+    max-height: 200px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .dark .thinking-inline-content-box {
+    background: hsl(var(--claude-elevated) / 0.5);
+    border-color: hsl(var(--claude-border-default));
+  }
+
+  /* Shimmer status line */
+  .thinking-inline-status-line {
+    display: flex;
+    align-items: center;
+    height: 22px;
+    flex-shrink: 0;
+  }
+
+  .thinking-inline-shimmer {
+    background: linear-gradient(
+      90deg,
+      #8b5cf6 0%,
+      #6366f1 15%,
+      #3b82f6 35%,
+      #06b6d4 50%,
+      #3b82f6 65%,
+      #6366f1 85%,
+      #8b5cf6 100%
+    );
+    background-size: 200% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: shimmer-sweep 2.5s linear infinite;
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  /* Scrollable content */
+  .thinking-inline-content-scroll {
+    flex: 1;
+    overflow-y: auto;
+    margin-top: 4px;
+  }
+
+  .thinking-inline-content-text {
+    margin: 0;
+    color: hsl(var(--claude-text-secondary));
+    opacity: 0.85;
+    font-size: 11px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-break: break-word;
+    font-family: ui-monospace, 'SF Mono', 'Cascadia Code', 'Segoe UI Mono', monospace;
+  }
+
+  /* Mobile adjustments */
+  @media (max-width: 640px) {
+    .thinking-inline-content-box {
+      max-height: 120px;
+      padding: 6px 10px;
+    }
+
+    .thinking-inline-stat-chip {
+      font-size: 10px;
+      padding: 1px 5px;
+    }
+  }
+
   /* V2 Code Block */
   .v2-code-block {
     margin: 16px 0;

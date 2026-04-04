@@ -21,10 +21,42 @@ const PROVIDER = 'claude';
  */
 export function normalizeMessage(raw, sessionId) {
   // ── Streaming events (realtime) ──────────────────────────────────────────
-  if (raw.type === 'content_block_delta' && raw.delta?.text) {
-    return [createNormalizedMessage({ kind: 'stream_delta', content: raw.delta.text, sessionId, provider: PROVIDER })];
+
+  // SDK wraps stream events in { type: 'stream_event', event: BetaRawMessageStreamEvent }
+  // Unwrap the actual event
+  const event = raw.type === 'stream_event' ? raw.event : raw;
+
+  // Thinking stream events (adaptive thinking)
+  if (event.type === 'content_block_start') {
+    const blockType = event.content_block?.type;
+    if (blockType === 'thinking') {
+      return [createNormalizedMessage({ kind: 'thinking_start', sessionId, provider: PROVIDER })];
+    }
+    // text block start - no action needed, deltas will flow
+    return [];
   }
-  if (raw.type === 'content_block_stop') {
+
+  if (event.type === 'content_block_delta') {
+    // Thinking delta - streaming thinking content
+    if (event.delta?.type === 'thinking_delta') {
+      return [createNormalizedMessage({
+        kind: 'thinking_delta',
+        content: event.delta.thinking || '',
+        sessionId,
+        provider: PROVIDER,
+      })];
+    }
+    // Text delta - streaming text content
+    if (event.delta?.text) {
+      return [createNormalizedMessage({ kind: 'stream_delta', content: event.delta.text, sessionId, provider: PROVIDER })];
+    }
+    return [];
+  }
+
+  if (event.type === 'content_block_stop') {
+    // We need to know which block stopped - but the event doesn't tell us
+    // The frontend will track state, so we send a generic stream_end
+    // Frontend can determine if it was thinking or text based on current state
     return [createNormalizedMessage({ kind: 'stream_end', sessionId, provider: PROVIDER })];
   }
 

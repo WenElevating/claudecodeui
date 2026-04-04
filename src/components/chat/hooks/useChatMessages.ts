@@ -113,6 +113,7 @@ export function normalizedToChatMessages(messages: NormalizedMessage[]): ChatMes
       case 'thinking':
         if (msg.content?.trim()) {
           converted.push({
+            id: msg.id,
             type: 'assistant',
             content: unescapeWithMathProtection(msg.content),
             timestamp: msg.timestamp,

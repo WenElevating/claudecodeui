@@ -54,6 +54,8 @@ function ChatInterface({
   const streamBufferRef = useRef('');
   const streamTimerRef = useRef<number | null>(null);
   const accumulatedStreamRef = useRef('');
+  const thinkingTimerRef = useRef<number | null>(null);
+  const accumulatedThinkingRef = useRef('');
   const pendingViewSessionRef = useRef<PendingViewSession | null>(null);
 
   const resetStreamingState = useCallback(() => {
@@ -63,6 +65,11 @@ function ChatInterface({
     }
     streamBufferRef.current = '';
     accumulatedStreamRef.current = '';
+    if (thinkingTimerRef.current) {
+      clearTimeout(thinkingTimerRef.current);
+      thinkingTimerRef.current = null;
+    }
+    accumulatedThinkingRef.current = '';
   }, []);
 
   const {
@@ -242,6 +249,8 @@ function ChatInterface({
     streamBufferRef,
     streamTimerRef,
     accumulatedStreamRef,
+    thinkingTimerRef,
+    accumulatedThinkingRef,
     onSessionInactive,
     onSessionProcessing,
     onSessionNotProcessing,
