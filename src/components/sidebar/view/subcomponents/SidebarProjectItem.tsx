@@ -153,7 +153,7 @@ export default function SidebarProjectItem({
                         type="text"
                         value={editingName}
                         onChange={(event) => onEditingNameChange(event.target.value)}
-                        className="w-full rounded-lg border-2 border-primary/40 bg-background px-3 py-2 pr-8 text-sm text-foreground shadow-sm transition-all duration-200 focus:border-primary focus:shadow-md focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full rounded-lg border-2 border-primary/40 bg-background px-3 py-2 pr-8 text-sm text-foreground shadow-sm transition-all duration-200 focus:border-primary focus:shadow-md focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                         placeholder={t('projects.projectNamePlaceholder')}
                         autoFocus
                         autoComplete="off"
@@ -313,7 +313,7 @@ export default function SidebarProjectItem({
                       type="text"
                       value={editingName}
                       onChange={(event) => onEditingNameChange(event.target.value)}
-                      className="w-full rounded border border-border bg-background px-2 py-1 pr-7 text-sm text-foreground focus:ring-2 focus:ring-primary/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full rounded border border-border bg-background px-2 py-1 pr-7 text-sm text-foreground focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-50"
                       placeholder={t('projects.projectNamePlaceholder')}
                       autoFocus
                       disabled={isRenaming}

@@ -18,7 +18,7 @@ export default function TerminalSessionBanner({ maxWidthClass = 'max-w-4xl' }: T
             {t('sessionInTerminal.title', { defaultValue: 'This session is running in a terminal' })}
           </span>
         </div>
-        <p className="mt-1 ml-6 text-xs opacity-80">
+        <p className="ml-6 mt-1 text-xs opacity-80">
           {t('sessionInTerminal.description', { defaultValue: 'Messages and permission requests from the terminal session are not visible here. You can browse conversation history in read-only mode.' })}
         </p>
       </div>

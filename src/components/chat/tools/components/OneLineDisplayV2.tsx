@@ -71,7 +71,7 @@ const ExpandableTerminalCode: React.FC<{
       <code
         ref={ref}
         onClick={handleClick}
-        className={`font-mono text-[13px] leading-relaxed text-[hsl(var(--claude-text))] inline-block ${isExpanded ? (wrapText ? 'whitespace-pre-wrap break-all' : 'whitespace-pre-wrap break-words') : 'whitespace-nowrap'} ${(isOverflowing || isExpanded) ? 'cursor-pointer' : ''}`}
+        className={`inline-block font-mono text-[13px] leading-relaxed text-[hsl(var(--claude-text))] ${isExpanded ? (wrapText ? 'whitespace-pre-wrap break-all' : 'whitespace-pre-wrap break-words') : 'whitespace-nowrap'} ${(isOverflowing || isExpanded) ? 'cursor-pointer' : ''}`}
       >
         <span className="select-none font-semibold text-[hsl(var(--claude-accent))]">$ </span>
         <span className="text-[hsl(var(--claude-text-secondary))]">{value}</span>
@@ -104,7 +104,7 @@ const ExpandableFilePath: React.FC<{
       <button
         ref={ref}
         onClick={handleClick}
-        className={`font-mono text-xs text-[hsl(var(--claude-blue))] transition-colors hover:underline inline-block text-left ${isExpanded ? 'whitespace-pre-wrap break-all' : 'whitespace-nowrap'} ${(isOverflowing || isExpanded) ? 'cursor-pointer' : ''}`}
+        className={`inline-block text-left font-mono text-xs text-[hsl(var(--claude-blue))] transition-colors hover:underline ${isExpanded ? 'whitespace-pre-wrap break-all' : 'whitespace-nowrap'} ${(isOverflowing || isExpanded) ? 'cursor-pointer' : ''}`}
         title={!isExpanded ? value : undefined}
       >
         {isExpanded ? value : displayName}

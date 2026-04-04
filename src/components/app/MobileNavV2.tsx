@@ -85,7 +85,7 @@ export default function MobileNavV2({ activeTab, setActiveTab, isInputFocused }:
     >
       {/* V2 Nav - Floating pill style */}
       <div
-        className="rounded-2xl shadow-lg overflow-hidden"
+        className="overflow-hidden rounded-2xl shadow-lg"
         style={{
           background: 'hsl(var(--claude-bg))',
           border: '1px solid hsl(var(--claude-border))',
@@ -111,14 +111,14 @@ export default function MobileNavV2({ activeTab, setActiveTab, isInputFocused }:
                 {/* Active indicator - amber pill */}
                 {isActive && (
                   <div
-                    className="absolute top-0 left-1/2 -translate-x-1/2 h-1 w-8 rounded-full"
+                    className="absolute left-1/2 top-0 h-1 w-8 -translate-x-1/2 rounded-full"
                     style={{ background: 'hsl(var(--claude-accent))' }}
                   />
                 )}
                 <div
-                  className={`flex items-center justify-center w-8 h-8 rounded-xl transition-all duration-200 ${
+                  className={`flex h-8 w-8 items-center justify-center rounded-xl transition-all duration-200 ${
                     isActive
-                      ? 'text-amber-600 bg-amber-50 dark:bg-amber-900/30'
+                      ? 'bg-amber-50 text-amber-600 dark:bg-amber-900/30'
                       : 'text-gray-400'
                   }`}
                 >
@@ -152,14 +152,14 @@ export default function MobileNavV2({ activeTab, setActiveTab, isInputFocused }:
               >
                 {(isPluginActive && !moreOpen) && (
                   <div
-                    className="absolute top-0 left-1/2 -translate-x-1/2 h-1 w-8 rounded-full"
+                    className="absolute left-1/2 top-0 h-1 w-8 -translate-x-1/2 rounded-full"
                     style={{ background: 'hsl(var(--claude-accent))' }}
                   />
                 )}
                 <div
-                  className={`flex items-center justify-center w-8 h-8 rounded-xl transition-all duration-200 ${
+                  className={`flex h-8 w-8 items-center justify-center rounded-xl transition-all duration-200 ${
                     isPluginActive
-                      ? 'text-amber-600 bg-amber-50 dark:bg-amber-900/30'
+                      ? 'bg-amber-50 text-amber-600 dark:bg-amber-900/30'
                       : 'text-gray-400'
                   }`}
                 >
@@ -180,7 +180,7 @@ export default function MobileNavV2({ activeTab, setActiveTab, isInputFocused }:
               {/* Popover */}
               {moreOpen && (
                 <div
-                  className="animate-in fade-in slide-in-from-bottom-2 absolute bottom-full right-0 z-[60] mb-2 min-w-[160px] rounded-xl shadow-lg overflow-hidden"
+                  className="animate-in fade-in slide-in-from-bottom-2 absolute bottom-full right-0 z-[60] mb-2 min-w-[160px] overflow-hidden rounded-xl shadow-lg"
                   style={{
                     background: 'hsl(var(--claude-elevated))',
                     border: '1px solid hsl(var(--claude-border))'
@@ -201,7 +201,7 @@ export default function MobileNavV2({ activeTab, setActiveTab, isInputFocused }:
                         }`}
                       >
                         <div
-                          className={`flex items-center justify-center w-7 h-7 rounded-lg ${
+                          className={`flex h-7 w-7 items-center justify-center rounded-lg ${
                             isActive ? 'bg-amber-100 text-amber-600' : 'bg-gray-100 text-gray-500'
                           }`}
                         >

@@ -1,15 +1,15 @@
 import { useCallback, useMemo, useState } from 'react';
 import { FolderPlus, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useGithubTokens } from '../hooks/useGithubTokens';
+import { cloneWorkspaceWithProgress, createWorkspaceRequest } from '../data/workspaceApi';
+import { isCloneWorkflow, shouldShowGithubAuthentication } from '../utils/pathUtils';
+import type { TokenMode, WizardFormState, WizardStep, WorkspaceType } from '../types';
 import StepConfigurationV2 from './components/StepConfigurationV2';
 import StepReviewV2 from './components/StepReviewV2';
 import StepTypeSelectionV2 from './components/StepTypeSelectionV2';
 import WizardFooterV2 from './components/WizardFooterV2';
 import WizardProgressV2 from './components/WizardProgressV2';
-import { useGithubTokens } from '../hooks/useGithubTokens';
-import { cloneWorkspaceWithProgress, createWorkspaceRequest } from '../data/workspaceApi';
-import { isCloneWorkflow, shouldShowGithubAuthentication } from '../utils/pathUtils';
-import type { TokenMode, WizardFormState, WizardStep, WorkspaceType } from '../types';
 
 type ProjectCreationWizardV2Props = {
   onClose: () => void;

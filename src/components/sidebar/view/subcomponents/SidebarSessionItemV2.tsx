@@ -84,7 +84,7 @@ export default function SidebarSessionItemV2({
                 <SessionProviderLogo provider={session.__provider} className="h-3.5 w-3.5" />
               </div>
               {sessionView.isActive && (
-                <div className="absolute top-full mt-3 left-1/2 -translate-x-1/2">
+                <div className="absolute left-1/2 top-full mt-3 -translate-x-1/2">
                   <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
                 </div>
               )}
@@ -111,7 +111,7 @@ export default function SidebarSessionItemV2({
             {/* Delete button */}
             {!sessionView.isCursorSession && (
               <button
-                className="v2-icon-btn h-7 w-7 rounded-md text-gray-400 hover:text-red-500 hover:bg-red-50"
+                className="v2-icon-btn h-7 w-7 rounded-md text-gray-400 hover:bg-red-50 hover:text-red-500"
                 onClick={(e) => { e.stopPropagation(); requestDeleteSession(); }}
               >
                 <Trash2 className="h-3.5 w-3.5" />
@@ -131,10 +131,10 @@ export default function SidebarSessionItemV2({
           onClick={() => onSessionSelect(session, project.name)}
         >
           {/* Provider logo with active indicator */}
-          <div className="relative flex-shrink-0 mt-0.5">
+          <div className="relative mt-0.5 flex-shrink-0">
             <SessionProviderLogo provider={session.__provider} className="h-3.5 w-3.5" />
             {sessionView.isActive && (
-              <div className="absolute top-full mt-3 left-1/2 -translate-x-1/2">
+              <div className="absolute left-1/2 top-full mt-3 -translate-x-1/2">
                 <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
               </div>
             )}
@@ -151,7 +151,7 @@ export default function SidebarSessionItemV2({
               {sessionView.messageCount > 0 && (
                 <Badge
                   variant="secondary"
-                  className="ml-auto px-1.5 py-0 text-xs bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 transition-opacity group-hover:opacity-0"
+                  className="ml-auto bg-gray-100 px-1.5 py-0 text-xs text-gray-600 transition-opacity group-hover:opacity-0 dark:bg-gray-800 dark:text-gray-400"
                 >
                   {sessionView.messageCount}
                 </Badge>
@@ -177,18 +177,18 @@ export default function SidebarSessionItemV2({
                   else if (event.key === 'Escape') onCancelEditingSession();
                 }}
                 onClick={(event) => event.stopPropagation()}
-                className="w-32 rounded-lg border border-gray-200 bg-white px-2 py-1 text-xs text-gray-800 focus:outline-none focus:ring-2 focus:ring-amber-100 focus:border-amber-300"
+                className="w-32 rounded-lg border border-gray-200 bg-white px-2 py-1 text-xs text-gray-800 focus:border-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-100"
                 autoFocus
               />
               <button
-                className="flex h-6 w-6 items-center justify-center rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-600"
+                className="flex h-6 w-6 items-center justify-center rounded-lg bg-amber-50 text-amber-600 hover:bg-amber-100"
                 onClick={(event) => { event.stopPropagation(); saveEditedSession(); }}
                 title={t('tooltips.save')}
               >
                 <Check className="h-3 w-3" />
               </button>
               <button
-                className="flex h-6 w-6 items-center justify-center rounded-lg bg-gray-50 hover:bg-gray-100 text-gray-500"
+                className="flex h-6 w-6 items-center justify-center rounded-lg bg-gray-50 text-gray-500 hover:bg-gray-100"
                 onClick={(event) => { event.stopPropagation(); onCancelEditingSession(); }}
                 title={t('tooltips.cancel')}
               >
@@ -198,7 +198,7 @@ export default function SidebarSessionItemV2({
           ) : (
             <>
               <button
-                className="flex h-6 w-6 items-center justify-center rounded-lg bg-gray-50 hover:bg-gray-100 text-gray-500"
+                className="flex h-6 w-6 items-center justify-center rounded-lg bg-gray-50 text-gray-500 hover:bg-gray-100"
                 onClick={(event) => { event.stopPropagation(); onStartEditingSession(session.id, sessionView.sessionName); }}
                 title={t('tooltips.editSessionName')}
               >
@@ -206,7 +206,7 @@ export default function SidebarSessionItemV2({
               </button>
               {!sessionView.isCursorSession && (
                 <button
-                  className="flex h-6 w-6 items-center justify-center rounded-lg bg-red-50 hover:bg-red-100 text-red-500"
+                  className="flex h-6 w-6 items-center justify-center rounded-lg bg-red-50 text-red-500 hover:bg-red-100"
                   onClick={(event) => { event.stopPropagation(); requestDeleteSession(); }}
                   title={t('tooltips.deleteSession')}
                 >

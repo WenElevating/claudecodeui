@@ -174,7 +174,7 @@ export default function SidebarProjectItemV2({
                       type="text"
                       value={editingName}
                       onChange={(event) => onEditingNameChange(event.target.value)}
-                      className="w-full rounded-lg border border-amber-300 bg-white px-3 py-2 text-sm text-gray-800 focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full rounded-lg border border-amber-300 bg-white px-3 py-2 text-sm text-gray-800 focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-100 disabled:cursor-not-allowed disabled:opacity-50"
                       placeholder={t('projects.projectNamePlaceholder')}
                       autoFocus
                       autoComplete="off"
@@ -212,7 +212,7 @@ export default function SidebarProjectItemV2({
                         {smartDisplayName}
                       </h3>
                       {isStarred && (
-                        <Star className="h-3.5 w-3.5 fill-amber-500 text-amber-500 flex-shrink-0" />
+                        <Star className="h-3.5 w-3.5 flex-shrink-0 fill-amber-500 text-amber-500" />
                       )}
                       {tasksEnabled && (
                         <TaskIndicator status={taskStatus} size="xs" className="flex-shrink-0" />
@@ -267,7 +267,7 @@ export default function SidebarProjectItemV2({
                       type="text"
                       value={editingName}
                       onChange={(event) => onEditingNameChange(event.target.value)}
-                      className="w-full rounded-lg border border-gray-200 bg-white px-2 py-1 pr-8 text-sm text-gray-800 focus:ring-2 focus:ring-amber-100 focus:border-amber-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full rounded-lg border border-gray-200 bg-white px-2 py-1 pr-8 text-sm text-gray-800 focus:border-amber-300 focus:ring-2 focus:ring-amber-100 disabled:cursor-not-allowed disabled:opacity-50"
                       placeholder={t('projects.projectNamePlaceholder')}
                       autoFocus
                       disabled={isRenaming}
@@ -298,21 +298,21 @@ export default function SidebarProjectItemV2({
                   </div>
                 ) : (
                   <>
-                    <div className="flex items-center gap-2 min-w-0">
+                    <div className="flex min-w-0 items-center gap-2">
                       <span className="truncate text-sm font-semibold text-gray-800 dark:text-gray-100" title={fullPath || project.displayName}>
                         {smartDisplayName}
                       </span>
                       {isStarred && (
-                        <Star className="h-3.5 w-3.5 fill-amber-500 text-amber-500 flex-shrink-0" />
+                        <Star className="h-3.5 w-3.5 flex-shrink-0 fill-amber-500 text-amber-500" />
                       )}
                       {tasksEnabled && (
                         <TaskIndicator status={taskStatus} size="xs" className="flex-shrink-0" />
                       )}
                     </div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1 min-w-0">
+                    <div className="flex min-w-0 items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
                       <span className="flex-shrink-0">{sessionCountDisplay}</span>
                       {showPath && (
-                        <span className="opacity-60 truncate" title={fullPath}>
+                        <span className="truncate opacity-60" title={fullPath}>
                           • {formattedPath}
                         </span>
                       )}
@@ -323,7 +323,7 @@ export default function SidebarProjectItemV2({
             </div>
 
             {/* Expand indicator */}
-            <div className="flex-shrink-0 ml-2">
+            <div className="ml-2 flex-shrink-0">
               {isExpanded ? (
                 <ChevronDown className="h-4 w-4 text-gray-400" />
               ) : (

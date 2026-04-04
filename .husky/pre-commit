@@ -1,3 +1,1 @@
-# Temporarily disabled lint-staged due to git backup issue
-# npx lint-staged
-echo "lint-staged skipped"
+npx lint-staged

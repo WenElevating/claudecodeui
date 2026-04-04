@@ -11,7 +11,6 @@ import type {
   SetStateAction,
   TouchEvent,
 } from 'react';
-import MicButton from '../../../mic-button/view/MicButton';
 import type { PendingPermissionRequest, PermissionMode, Provider } from '../../types/types';
 import CommandMenu from './CommandMenu';
 import ClaudeStatus from './ClaudeStatus';
@@ -170,9 +169,9 @@ export default function ChatComposerV2({
     : '';
 
   return (
-    <div className={`flex-shrink-0 p-4 md:p-5 v2-composer-desktop ${mobileFloatingClass}`} style={{ background: 'hsl(var(--claude-bg))' }}>
+    <div className={`v2-composer-desktop flex-shrink-0 p-4 md:p-5 ${mobileFloatingClass}`} style={{ background: 'hsl(var(--claude-bg))' }}>
       {!hasQuestionPanel && (
-        <div className="flex-1 mx-auto max-w-3xl md:max-w-4xl">
+        <div className="mx-auto max-w-3xl flex-1 md:max-w-4xl">
           <ClaudeStatus
             status={claudeStatus}
             isLoading={isLoading}
@@ -300,7 +299,7 @@ export default function ChatComposerV2({
               disabled={sessionInTerminal.active}
             />
 
-            <div className="flex items-center gap-1 flex-shrink-0">
+            <div className="flex flex-shrink-0 items-center gap-1">
               <button
                 type="button"
                 onClick={openImagePicker}
