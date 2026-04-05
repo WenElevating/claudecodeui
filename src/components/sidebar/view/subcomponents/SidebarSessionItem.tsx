@@ -5,7 +5,7 @@ import { cn } from '../../../../lib/utils';
 import { formatTimeAgo } from '../../../../utils/dateUtils';
 import type { Project, ProjectSession, SessionProvider } from '../../../../types/app';
 import type { SessionWithProvider } from '../../types/types';
-import { createSessionViewModel } from '../../utils/utils';
+import { createSessionViewModel, getSessionIdentityKey, isSameSessionIdentity } from '../../utils/utils';
 import SessionProviderLogo from '../../../llm-logo-provider/SessionProviderLogo';
 
 type SidebarSessionItemProps = {
@@ -47,7 +47,8 @@ export default function SidebarSessionItem({
   t,
 }: SidebarSessionItemProps) {
   const sessionView = createSessionViewModel(session, currentTime, t);
-  const isSelected = selectedSession?.id === session.id;
+  const sessionIdentityKey = getSessionIdentityKey(session);
+  const isSelected = isSameSessionIdentity(selectedSession, session);
 
   const selectMobileSession = () => {
     onProjectSelect(project);
@@ -159,7 +160,7 @@ export default function SidebarSessionItem({
         </Button>
 
         <div className="absolute right-2 top-1/2 flex -translate-y-1/2 transform items-center gap-1 opacity-0 transition-all duration-200 group-hover:opacity-100">
-            {editingSession === session.id ? (
+            {editingSession === sessionIdentityKey ? (
               <>
                 <input
                   type="text"
@@ -204,7 +205,7 @@ export default function SidebarSessionItem({
                   className="flex h-6 w-6 items-center justify-center rounded bg-gray-50 hover:bg-gray-100 dark:bg-gray-900/20 dark:hover:bg-gray-900/40"
                   onClick={(event) => {
                     event.stopPropagation();
-                    onStartEditingSession(session.id, sessionView.sessionName);
+                    onStartEditingSession(sessionIdentityKey, sessionView.sessionName);
                   }}
                   title={t('tooltips.editSessionName')}
                 >

@@ -21,6 +21,12 @@ export type SessionDeleteConfirmation = {
   provider: SessionProvider;
 };
 
+export type SessionDeleteAction = {
+  projectName: string;
+  sessionId: string;
+  provider: SessionProvider;
+};
+
 export type SidebarProps = {
   projects: Project[];
   selectedProject: Project | null;
@@ -28,7 +34,7 @@ export type SidebarProps = {
   onProjectSelect: (project: Project) => void;
   onSessionSelect: (session: ProjectSession) => void;
   onNewSession: (project: Project) => void;
-  onSessionDelete?: (sessionId: string) => void;
+  onSessionDelete?: (action: SessionDeleteAction) => void;
   onProjectDelete?: (projectName: string) => void;
   isLoading: boolean;
   loadingProgress: LoadingProgress | null;

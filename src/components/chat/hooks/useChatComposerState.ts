@@ -550,11 +550,7 @@ export function useChatComposerState({
       addMessage(userMessage);
       setIsLoading(true); // Processing banner starts
       setCanAbortSession(true);
-      setClaudeStatus({
-        text: 'Processing',
-        tokens: 0,
-        can_interrupt: true,
-      });
+      setClaudeStatus(null);
 
       // Start command timeout — if no server response within COMMAND_TIMEOUT_MS, force-recover UI
       if (commandTimeoutRef.current) clearTimeout(commandTimeoutRef.current);

@@ -13,10 +13,7 @@ import type {
 } from 'react';
 import type { PendingPermissionRequest, PermissionMode, Provider } from '../../types/types';
 import CommandMenu from './CommandMenu';
-import ClaudeStatus from './ClaudeStatus';
 import ImageAttachment from './ImageAttachment';
-import PermissionRequestsBanner from './PermissionRequestsBanner';
-import TerminalSessionBanner from './TerminalSessionBanner';
 import ChatInputControls from './ChatInputControls';
 
 interface MentionableFile {
@@ -36,14 +33,7 @@ interface SlashCommand {
 
 interface ChatComposerProps {
   pendingPermissionRequests: PendingPermissionRequest[];
-  handlePermissionDecision: (
-    requestIds: string | string[],
-    decision: { allow?: boolean; message?: string; rememberEntry?: string | null; updatedInput?: unknown },
-  ) => void;
-  handleGrantToolPermission: (suggestion: { entry: string; toolName: string }) => { success: boolean };
-  claudeStatus: { text: string; tokens: number; can_interrupt: boolean } | null;
   isLoading: boolean;
-  onAbortSession: () => void;
   sessionInTerminal: { active: boolean; provider: string | null };
   provider: Provider | string;
   permissionMode: PermissionMode | string;
@@ -90,18 +80,12 @@ interface ChatComposerProps {
   onInputFocusChange?: (focused: boolean) => void;
   isInputFocused?: boolean;
   placeholder: string;
-  isTextareaExpanded: boolean;
   sendByCtrlEnter?: boolean;
-  onTranscript: (text: string) => void;
 }
 
 export default function ChatComposerV2({
   pendingPermissionRequests,
-  handlePermissionDecision,
-  handleGrantToolPermission,
-  claudeStatus,
   isLoading,
-  onAbortSession,
   sessionInTerminal,
   provider,
   permissionMode,
@@ -148,9 +132,7 @@ export default function ChatComposerV2({
   onInputFocusChange,
   isInputFocused,
   placeholder,
-  isTextareaExpanded,
   sendByCtrlEnter,
-  onTranscript,
 }: ChatComposerProps) {
   const { t } = useTranslation('chat');
   const textareaRect = textareaRef.current?.getBoundingClientRect();
@@ -170,26 +152,7 @@ export default function ChatComposerV2({
 
   return (
     <div className={`v2-composer-desktop flex-shrink-0 p-4 md:p-5 ${mobileFloatingClass}`} style={{ background: 'hsl(var(--claude-bg))' }}>
-      {!hasQuestionPanel && (
-        <div className="mx-auto max-w-3xl flex-1 md:max-w-4xl">
-          <ClaudeStatus
-            status={claudeStatus}
-            isLoading={isLoading}
-            onAbort={onAbortSession}
-            provider={provider}
-          />
-        </div>
-      )}
-
-      {sessionInTerminal.active && <TerminalSessionBanner maxWidthClass="max-w-3xl md:max-w-4xl" />}
-
       <div className="mx-auto mb-3 max-w-3xl md:max-w-4xl">
-        <PermissionRequestsBanner
-          pendingPermissionRequests={pendingPermissionRequests}
-          handlePermissionDecision={handlePermissionDecision}
-          handleGrantToolPermission={handleGrantToolPermission}
-        />
-
         {!hasQuestionPanel && <ChatInputControls
           permissionMode={permissionMode}
           onModeSwitch={onModeSwitch}
@@ -208,7 +171,6 @@ export default function ChatComposerV2({
       </div>
 
       {!hasQuestionPanel && <form onSubmit={onSubmit as (event: FormEvent<HTMLFormElement>) => void} className="relative mx-auto max-w-3xl md:max-w-4xl">
-        {/* Drag overlay */}
         {isDragActive && (
           <div className="absolute inset-0 z-50 flex items-center justify-center rounded-2xl border-2 border-dashed border-amber-300 bg-amber-50/50 dark:border-amber-600/50 dark:bg-amber-950/30">
             <div className="v2-surface rounded-xl p-4">
@@ -236,7 +198,6 @@ export default function ChatComposerV2({
           </div>
         )}
 
-        {/* File dropdown */}
         {showFileDropdown && filteredFiles.length > 0 && (
           <div className="absolute bottom-full left-0 right-0 z-50 mb-2 max-h-48 overflow-y-auto rounded-xl shadow-lg" style={{ background: 'hsl(var(--claude-elevated))', border: '1px solid hsl(var(--claude-border))' }}>
             {filteredFiles.map((file, index) => (
@@ -268,7 +229,6 @@ export default function ChatComposerV2({
           frequentCommands={frequentCommands}
         />
 
-        {/* V2 Input - Pill style */}
         <div
           {...getRootProps()}
           className="v2-input-wrapper"
@@ -327,7 +287,6 @@ export default function ChatComposerV2({
           </div>
         </div>
 
-        {/* Hint text */}
         <p className="mt-3 text-center text-xs" style={{ color: 'hsl(var(--claude-text-muted))' }}>
           {sendByCtrlEnter ? t('input.hintText.ctrlEnter') : t('input.hintText.enter')}
         </p>
@@ -335,3 +294,5 @@ export default function ChatComposerV2({
     </div>
   );
 }
+
+

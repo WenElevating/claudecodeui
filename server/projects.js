@@ -1153,6 +1153,38 @@ async function deleteSession(projectName, sessionId) {
   }
 }
 
+async function deleteCursorSession(projectName, sessionId) {
+  const config = await loadProjectConfig();
+  let projectPath = config[projectName]?.path || config[projectName]?.originalPath;
+
+  if (!projectPath) {
+    projectPath = await extractProjectDirectory(projectName);
+  }
+
+  if (!projectPath) {
+    throw new Error(`Project path not found for ${projectName}`);
+  }
+
+  const hash = crypto.createHash('md5').update(projectPath).digest('hex');
+  const cursorProjectDir = path.join(os.homedir(), '.cursor', 'chats', hash);
+  const cursorSessionDir = path.join(cursorProjectDir, sessionId);
+
+  await fs.rm(cursorSessionDir, { recursive: true, force: true });
+
+  try {
+    const remainingEntries = await fs.readdir(cursorProjectDir);
+    if (remainingEntries.length === 0) {
+      await fs.rmdir(cursorProjectDir);
+    }
+  } catch (error) {
+    if (error?.code !== 'ENOENT') {
+      throw error;
+    }
+  }
+
+  return true;
+}
+
 // Check if a project is empty (has no sessions)
 async function isProjectEmpty(projectName) {
   try {
@@ -2545,6 +2577,7 @@ export {
   parseJsonlSessions,
   renameProject,
   deleteSession,
+  deleteCursorSession,
   isProjectEmpty,
   deleteProject,
   addProjectManually,

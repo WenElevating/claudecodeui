@@ -91,6 +91,10 @@ export const api = {
     authenticatedFetch(`/api/codex/sessions/${sessionId}`, {
       method: 'DELETE',
     }),
+  deleteCursorSession: (projectName, sessionId) =>
+    authenticatedFetch(`/api/cursor/sessions/${encodeURIComponent(sessionId)}?projectName=${encodeURIComponent(projectName)}`, {
+      method: 'DELETE',
+    }),
   deleteGeminiSession: (sessionId) =>
     authenticatedFetch(`/api/gemini/sessions/${sessionId}`, {
       method: 'DELETE',

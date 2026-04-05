@@ -298,6 +298,23 @@ function ChatInterface({
   const lastAssistantMessageAtRef = useRef(0);
   const handledCompletionTimestampRef = useRef<number | null>(null);
   const [liveActivityText, setLiveActivityText] = useState<string | null>(null);
+  const isVisibleSession = useCallback(
+    (sessionId?: string | null, sessionProvider?: string | null) => {
+      if (!sessionId) {
+        return false;
+      }
+
+      const resolvedProvider = (sessionProvider as SessionProvider) || selectedSession?.__provider || provider;
+      const selectedProvider = selectedSession?.__provider || provider;
+      return (
+        (sessionId === selectedSession?.id && resolvedProvider === selectedProvider) ||
+        (sessionId === currentSessionId && resolvedProvider === provider) ||
+        (sessionId === pendingViewSessionRef.current?.sessionId && resolvedProvider === provider) ||
+        (sessionId === activeViewSessionId && resolvedProvider === selectedProvider)
+      );
+    },
+    [activeViewSessionId, currentSessionId, pendingViewSessionRef, provider, selectedSession?.__provider, selectedSession?.id],
+  );
 
   useEffect(() => {
     if (!latestMessage) {
@@ -309,15 +326,9 @@ function ChatInterface({
       (typeof msg.sessionId === 'string' ? msg.sessionId : null) ||
       (typeof msg.actualSessionId === 'string' ? msg.actualSessionId : null) ||
       activeViewSessionId;
+    const messageProvider = typeof msg.provider === 'string' ? msg.provider : null;
 
-    const isVisibleSession = Boolean(messageSessionId) && (
-      messageSessionId === selectedSession?.id ||
-      messageSessionId === currentSessionId ||
-      messageSessionId === pendingViewSessionRef.current?.sessionId ||
-      messageSessionId === activeViewSessionId
-    );
-
-    if (!isVisibleSession) {
+    if (!isVisibleSession(messageSessionId, messageProvider)) {
       return;
     }
 
@@ -370,6 +381,7 @@ function ChatInterface({
     latestMessage,
     onSessionInactive,
     onSessionNotProcessing,
+    isVisibleSession,
     selectedSession?.id,
     t,
   ]);

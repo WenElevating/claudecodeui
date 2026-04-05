@@ -34,6 +34,7 @@ type MessageComponentProps = {
   showThinking?: boolean;
   selectedProject?: Project | null;
   provider: Provider | string;
+  liveStatusText?: string | null;
 };
 
 type InteractiveOption = {
@@ -210,7 +211,7 @@ const ThinkingBlock = memo(function ThinkingBlock({
   );
 });
 
-const MessageComponentV2 = memo(({ message, prevMessage, createDiff, onFileOpen, onShowSettings, onGrantToolPermission, autoExpandTools, showRawParameters, showThinking, selectedProject, provider }: MessageComponentProps) => {
+const MessageComponentV2 = memo(({ message, prevMessage, createDiff, onFileOpen, onShowSettings, onGrantToolPermission, autoExpandTools, showRawParameters, showThinking, selectedProject, provider, liveStatusText }: MessageComponentProps) => {
   const { t } = useTranslation('chat');
   const isGrouped = prevMessage && prevMessage.type === message.type &&
     ((prevMessage.type === 'assistant') ||
@@ -503,7 +504,7 @@ const MessageComponentV2 = memo(({ message, prevMessage, createDiff, onFileOpen,
               <ThinkingBlock
                 content={message.content || ''}
                 isStreaming={isStreamingThinking}
-                statusText={undefined}
+                statusText={isStreamingThinking ? liveStatusText || undefined : undefined}
                 provider={provider}
               />
             ) : (

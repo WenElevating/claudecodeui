@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { NavigateFunction } from 'react-router-dom';
+import type { SessionDeleteAction } from '../components/sidebar/types/types';
 import { api } from '../utils/api';
 import type {
   AppSocketMessage,
@@ -65,12 +66,23 @@ const projectsHaveChanges = (
 
 const getProjectSessions = (project: Project): ProjectSession[] => {
   return [
-    ...(project.sessions ?? []),
-    ...(project.codexSessions ?? []),
-    ...(project.cursorSessions ?? []),
-    ...(project.geminiSessions ?? []),
+    ...(project.sessions ?? []).map((session) => ({ ...session, __provider: 'claude' as const })),
+    ...(project.codexSessions ?? []).map((session) => ({ ...session, __provider: 'codex' as const })),
+    ...(project.cursorSessions ?? []).map((session) => ({ ...session, __provider: 'cursor' as const })),
+    ...(project.geminiSessions ?? []).map((session) => ({ ...session, __provider: 'gemini' as const })),
   ];
 };
+
+const getSessionProvider = (session: ProjectSession | null | undefined): ProjectSession['__provider'] =>
+  session?.__provider || 'claude';
+
+const matchesSelectedSession = (
+  candidate: ProjectSession,
+  selectedSession: ProjectSession,
+): boolean => (
+  candidate.id === selectedSession.id &&
+  getSessionProvider(candidate) === getSessionProvider(selectedSession)
+);
 
 const isUpdateAdditive = (
   currentProjects: Project[],
@@ -90,10 +102,10 @@ const isUpdateAdditive = (
   }
 
   const currentSelectedSession = getProjectSessions(currentSelectedProject).find(
-    (session) => session.id === selectedSession.id,
+    (session) => matchesSelectedSession(session, selectedSession),
   );
   const updatedSelectedSession = getProjectSessions(updatedSelectedProject).find(
-    (session) => session.id === selectedSession.id,
+    (session) => matchesSelectedSession(session, selectedSession),
   );
 
   if (!currentSelectedSession || !updatedSelectedSession) {
@@ -286,11 +298,21 @@ export function useProjectsState({
     }
 
     const updatedSelectedSession = getProjectSessions(updatedSelectedProject).find(
-      (session) => session.id === selectedSession.id,
+      (session) => matchesSelectedSession(session, selectedSession),
     );
 
     if (!updatedSelectedSession) {
       setSelectedSession(null);
+      return;
+    }
+
+    const normalizedUpdatedSession =
+      updatedSelectedSession.__provider || !selectedSession.__provider
+        ? updatedSelectedSession
+        : { ...updatedSelectedSession, __provider: selectedSession.__provider };
+
+    if (serialize(normalizedUpdatedSession) !== serialize(selectedSession)) {
+      setSelectedSession(normalizedUpdatedSession);
     }
   }, [latestMessage, selectedProject, selectedSession, activeSessions, projects]);
 
@@ -392,7 +414,10 @@ export function useProjectsState({
         setActiveTab('chat');
       }
 
-      const provider = localStorage.getItem('selected-provider') || 'claude';
+      const provider =
+        session.__provider || (localStorage.getItem('selected-provider') as ProjectSession['__provider']) || 'claude';
+      localStorage.setItem('selected-provider', provider);
+
       if (provider === 'cursor') {
         sessionStorage.setItem('cursorSessionId', session.id);
       }
@@ -426,24 +451,56 @@ export function useProjectsState({
   );
 
   const handleSessionDelete = useCallback(
-    (sessionIdToDelete: string) => {
-      if (selectedSession?.id === sessionIdToDelete) {
+    ({ projectName, sessionId: sessionIdToDelete, provider }: SessionDeleteAction) => {
+      if (
+        selectedSession?.id === sessionIdToDelete &&
+        (selectedSession.__provider || 'claude') === provider
+      ) {
         setSelectedSession(null);
         navigate('/');
       }
 
       setProjects((prevProjects) =>
-        prevProjects.map((project) => ({
-          ...project,
-          sessions: project.sessions?.filter((session) => session.id !== sessionIdToDelete) ?? [],
-          sessionMeta: {
-            ...project.sessionMeta,
-            total: Math.max(0, (project.sessionMeta?.total as number | undefined ?? 0) - 1),
-          },
-        })),
+        prevProjects.map((project) => {
+          if (project.name !== projectName) {
+            return project;
+          }
+
+          if (provider === 'cursor') {
+            return {
+              ...project,
+              cursorSessions: project.cursorSessions?.filter((session) => session.id !== sessionIdToDelete) ?? [],
+            };
+          }
+
+          if (provider === 'codex') {
+            return {
+              ...project,
+              codexSessions: project.codexSessions?.filter((session) => session.id !== sessionIdToDelete) ?? [],
+            };
+          }
+
+          if (provider === 'gemini') {
+            return {
+              ...project,
+              geminiSessions: project.geminiSessions?.filter((session) => session.id !== sessionIdToDelete) ?? [],
+            };
+          }
+
+          return {
+            ...project,
+            sessions: project.sessions?.filter((session) => session.id !== sessionIdToDelete) ?? [],
+            sessionMeta: project.sessionMeta
+              ? {
+                  ...project.sessionMeta,
+                  total: Math.max(0, (project.sessionMeta.total as number | undefined ?? 0) - 1),
+                }
+              : project.sessionMeta,
+          };
+        }),
       );
     },
-    [navigate, selectedSession?.id],
+    [navigate, selectedSession?.__provider, selectedSession?.id],
   );
 
   const handleSidebarRefresh = useCallback(async () => {
@@ -473,7 +530,7 @@ export function useProjectsState({
       }
 
       const refreshedSession = getProjectSessions(refreshedProject).find(
-        (session) => session.id === selectedSession.id,
+        (session) => matchesSelectedSession(session, selectedSession),
       );
 
       if (refreshedSession) {

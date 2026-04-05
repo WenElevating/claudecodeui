@@ -37,11 +37,11 @@
  * - tool_use:             toolName, toolInput, toolId
  * - tool_result:          toolId, content, isError
  * - thinking:             content (persisted thinking block from history)
- * - thinking_start:       (no extra fields) - signals start of streaming thinking
+ * - thinking_start:       blockType? - signals start of streaming thinking
  * - thinking_delta:       content - incremental thinking content
  * - thinking_end:         (no extra fields) - signals end of streaming thinking
  * - stream_delta:         content
- * - stream_end:           (no extra fields)
+ * - stream_end:           blockType? - signals end of streaming text
  * - error:                content
  * - complete:             (no extra fields)
  * - status:               text, tokens?, canInterrupt?

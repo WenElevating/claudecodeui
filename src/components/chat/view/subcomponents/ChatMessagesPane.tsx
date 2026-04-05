@@ -1,6 +1,6 @@
-import React, { useCallback, useRef, useMemo } from 'react';
+import React, { useCallback, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { Dispatch, RefObject, SetStateAction } from 'react';
+import type { Dispatch, ReactNode, RefObject, SetStateAction } from 'react';
 import type { ChatMessage } from '../../types/types';
 import type { Project, ProjectSession, SessionProvider } from '../../../../types/app';
 import { getIntrinsicMessageKey } from '../../utils/messageKeys';
@@ -53,8 +53,9 @@ interface ChatMessagesPaneProps {
   showRawParameters?: boolean;
   showThinking?: boolean;
   selectedProject: Project;
-  isLoading: boolean;
   isInputFocused?: boolean;
+  statusMessageSlot?: ReactNode;
+  liveStatusText?: string | null;
 }
 
 function ChatMessagesPane({
@@ -100,8 +101,9 @@ function ChatMessagesPane({
   showRawParameters,
   showThinking,
   selectedProject,
-  isLoading,
   isInputFocused,
+  statusMessageSlot,
+  liveStatusText,
 }: ChatMessagesPaneProps) {
   const { t } = useTranslation('chat');
   const { useNewUi } = useUiVersion();
@@ -109,7 +111,6 @@ function ChatMessagesPane({
   const allocatedKeysRef = useRef<Set<string>>(new Set());
   const generatedMessageKeyCounterRef = useRef(0);
 
-  // Keep keys stable across prepends so existing MessageComponent instances retain local state.
   const getMessageKey = useCallback((message: ChatMessage) => {
     const existingKey = messageKeyMapRef.current.get(message);
     if (existingKey) {
@@ -133,6 +134,51 @@ function ChatMessagesPane({
     return candidateKey;
   }, []);
 
+  const messageList = useMemo(() => (
+    visibleMessages.map((message, index) => {
+      let prevMessage = null;
+      for (let i = index - 1; i >= 0; i--) {
+        const prev = visibleMessages[i];
+        if (!(prev.isThinking && !showThinking)) {
+          prevMessage = prev;
+          break;
+        }
+      }
+      const MessageComp = useNewUi ? MessageComponentV2 : MessageComponent;
+      return (
+        <MessageComp
+          key={getMessageKey(message)}
+          message={message}
+          prevMessage={prevMessage}
+          createDiff={createDiff}
+          onFileOpen={onFileOpen}
+          onShowSettings={onShowSettings}
+          onGrantToolPermission={onGrantToolPermission}
+          autoExpandTools={autoExpandTools}
+          showRawParameters={showRawParameters}
+          showThinking={showThinking}
+          selectedProject={selectedProject}
+          provider={provider}
+          liveStatusText={liveStatusText}
+        />
+      );
+    })
+  ), [
+    autoExpandTools,
+    createDiff,
+    getMessageKey,
+    liveStatusText,
+    onFileOpen,
+    onGrantToolPermission,
+    onShowSettings,
+    provider,
+    selectedProject,
+    showRawParameters,
+    showThinking,
+    useNewUi,
+    visibleMessages,
+  ]);
+
   return (
     <div
       ref={scrollContainerRef}
@@ -152,28 +198,30 @@ function ChatMessagesPane({
           </div>
         </div>
       ) : chatMessages.length === 0 ? (
-        <ProviderSelectionEmptyState
-          selectedSession={selectedSession}
-          currentSessionId={currentSessionId}
-          provider={provider}
-          setProvider={setProvider}
-          textareaRef={textareaRef}
-          claudeModel={claudeModel}
-          setClaudeModel={setClaudeModel}
-          cursorModel={cursorModel}
-          setCursorModel={setCursorModel}
-          codexModel={codexModel}
-          setCodexModel={setCodexModel}
-          geminiModel={geminiModel}
-          setGeminiModel={setGeminiModel}
-          tasksEnabled={tasksEnabled}
-          isTaskMasterInstalled={isTaskMasterInstalled}
-          onShowAllTasks={onShowAllTasks}
-          setInput={setInput}
-        />
+        <>
+          <ProviderSelectionEmptyState
+            selectedSession={selectedSession}
+            currentSessionId={currentSessionId}
+            provider={provider}
+            setProvider={setProvider}
+            textareaRef={textareaRef}
+            claudeModel={claudeModel}
+            setClaudeModel={setClaudeModel}
+            cursorModel={cursorModel}
+            setCursorModel={setCursorModel}
+            codexModel={codexModel}
+            setCodexModel={setCodexModel}
+            geminiModel={geminiModel}
+            setGeminiModel={setGeminiModel}
+            tasksEnabled={tasksEnabled}
+            isTaskMasterInstalled={isTaskMasterInstalled}
+            onShowAllTasks={onShowAllTasks}
+            setInput={setInput}
+          />
+          {statusMessageSlot}
+        </>
       ) : (
         <>
-          {/* Loading indicator for older messages (hide when load-all is active) */}
           {isLoadingMoreMessages && !isLoadingAllMessages && !allMessagesLoaded && (
             <div className="py-3 text-center text-gray-500 dark:text-gray-400">
               <div className="flex items-center justify-center space-x-2">
@@ -183,7 +231,6 @@ function ChatMessagesPane({
             </div>
           )}
 
-          {/* Indicator showing there are more messages to load (hide when all loaded) */}
           {hasMoreMessages && !isLoadingMoreMessages && !allMessagesLoaded && (
             <div className="border-b border-gray-200 py-2 text-center text-sm text-gray-500 dark:border-gray-700 dark:text-gray-400">
               {totalMessages > 0 && (
@@ -195,7 +242,6 @@ function ChatMessagesPane({
             </div>
           )}
 
-          {/* Floating "Load all messages" overlay */}
           {(showLoadAllOverlay || isLoadingAllMessages || loadAllJustFinished) && (
             <div className="pointer-events-none sticky top-2 z-20 flex justify-center">
               {loadAllJustFinished ? (
@@ -225,14 +271,12 @@ function ChatMessagesPane({
             </div>
           )}
 
-          {/* Performance warning when all messages are loaded */}
           {allMessagesLoaded && (
             <div className="border-b border-amber-200 bg-amber-50 py-1.5 text-center text-xs text-amber-600 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-400">
               {t('session.messages.perfWarning')}
             </div>
           )}
 
-          {/* Legacy message count indicator (for non-paginated view) */}
           {!hasMoreMessages && chatMessages.length > visibleMessageCount && (
             <div className="border-b border-gray-200 py-2 text-center text-sm text-gray-500 dark:border-gray-700 dark:text-gray-400">
               {t('session.messages.showingLast', { count: visibleMessageCount, total: chatMessages.length })} |
@@ -249,39 +293,14 @@ function ChatMessagesPane({
             </div>
           )}
 
-          {visibleMessages.map((message, index) => {
-            // Find the previous visible message, skipping hidden thinking messages
-            let prevMessage = null;
-            for (let i = index - 1; i >= 0; i--) {
-              const prev = visibleMessages[i];
-              if (!(prev.isThinking && !showThinking)) {
-                prevMessage = prev;
-                break;
-              }
-            }
-            const MessageComp = useNewUi ? MessageComponentV2 : MessageComponent;
-            return (
-              <MessageComp
-                key={getMessageKey(message)}
-                message={message}
-                prevMessage={prevMessage}
-                createDiff={createDiff}
-                onFileOpen={onFileOpen}
-                onShowSettings={onShowSettings}
-                onGrantToolPermission={onGrantToolPermission}
-                autoExpandTools={autoExpandTools}
-                showRawParameters={showRawParameters}
-                showThinking={showThinking}
-                selectedProject={selectedProject}
-                provider={provider}
-              />
-            );
-          })}
+          {messageList}
+          {statusMessageSlot}
         </>
       )}
     </div>
   );
 }
 
-
 export default React.memo(ChatMessagesPane);
+
+

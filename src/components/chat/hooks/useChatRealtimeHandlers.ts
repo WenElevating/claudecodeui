@@ -110,6 +110,22 @@ export function useChatRealtimeHandlers({
       getSessionStoreKey(sessionId, (sessionProvider as SessionProvider) || selectedSession?.__provider || provider),
     [provider, selectedSession?.__provider],
   );
+  const isVisibleSession = useCallback(
+    (sessionId?: string | null, sessionProvider?: string | null) => {
+      if (!sessionId) {
+        return false;
+      }
+
+      const resolvedProvider = (sessionProvider as SessionProvider) || selectedSession?.__provider || provider;
+      const selectedProvider = selectedSession?.__provider || provider;
+      return (
+        (sessionId === selectedSession?.id && resolvedProvider === selectedProvider) ||
+        (sessionId === currentSessionId && resolvedProvider === provider) ||
+        (sessionId === pendingViewSessionRef.current?.sessionId && resolvedProvider === provider)
+      );
+    },
+    [currentSessionId, pendingViewSessionRef, provider, selectedSession?.__provider, selectedSession?.id],
+  );
 
   useEffect(() => {
     if (!latestMessage) return;
@@ -118,13 +134,6 @@ export function useChatRealtimeHandlers({
 
     const activeViewSessionId =
       selectedSession?.id || currentSessionId || pendingViewSessionRef.current?.sessionId || null;
-    const isVisibleSession = (sessionId?: string | null) =>
-      Boolean(sessionId) && (
-        sessionId === selectedSession?.id ||
-        sessionId === currentSessionId ||
-        sessionId === pendingViewSessionRef.current?.sessionId ||
-        sessionId === activeViewSessionId
-      );
 
     /* ---------------------------------------------------------------- */
     /*  Legacy messages (no `kind` field) — handle and return           */
@@ -142,7 +151,7 @@ export function useChatRealtimeHandlers({
 
         case 'pending-permissions-response': {
           const permSessionId = msg.sessionId;
-          const isCurrentPermSession = isVisibleSession(permSessionId);
+          const isCurrentPermSession = isVisibleSession(permSessionId, msg.provider);
           if (permSessionId && !isCurrentPermSession) return;
           setPendingPermissionRequests(msg.data || []);
           return;
@@ -151,7 +160,7 @@ export function useChatRealtimeHandlers({
         case 'session-status': {
           const statusSessionId = msg.sessionId;
           if (!statusSessionId) return;
-          const isCurrentSession = isVisibleSession(statusSessionId);
+          const isCurrentSession = isVisibleSession(statusSessionId, msg.provider);
 
           // Handle PTY (terminal) session detection
           if (isCurrentSession) {
@@ -205,7 +214,7 @@ export function useChatRealtimeHandlers({
     const sid = msg.sessionId || activeViewSessionId;
     const messageProvider = (typeof msg.provider === 'string' ? msg.provider : null) || selectedSession?.__provider || provider;
     const storeKey = sid ? getStoreKey(sid, messageProvider) : null;
-    const isCurrentMessageSession = isVisibleSession(sid);
+    const isCurrentMessageSession = isVisibleSession(sid, messageProvider);
 
     // --- Thinking stream: buffer for performance ---
     if (msg.kind === 'thinking_start') {
@@ -476,6 +485,7 @@ export function useChatRealtimeHandlers({
     onNavigateToSession,
     onWebSocketReconnect,
     getStoreKey,
+    isVisibleSession,
     sessionStore,
   ]);
 }

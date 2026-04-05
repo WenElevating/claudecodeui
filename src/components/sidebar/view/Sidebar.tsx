@@ -8,6 +8,7 @@ import { useTaskMaster } from '../../../contexts/TaskMasterContext';
 import { useTasksSettings } from '../../../contexts/TasksSettingsContext';
 import type { Project, SessionProvider } from '../../../types/app';
 import type { MCPServerStatus, SidebarProps } from '../types/types';
+import { getSessionIdentityKey } from '../utils/utils';
 import SidebarCollapsed from './subcomponents/SidebarCollapsed';
 import SidebarContent from './subcomponents/SidebarContent';
 import SidebarModals from './subcomponents/SidebarModals';
@@ -250,7 +251,9 @@ function Sidebar({
               if (project) {
                 handleProjectSelect(project);
                 const sessions = getProjectSessions(project);
-                const existing = sessions.find(s => s.id === sessionId);
+                const existing = sessions.find(
+                  (session) => getSessionIdentityKey(session) === getSessionIdentityKey(sessionObj),
+                );
                 if (existing) {
                   handleSessionClick({ ...existing, ...searchTarget }, projectName);
                 } else {

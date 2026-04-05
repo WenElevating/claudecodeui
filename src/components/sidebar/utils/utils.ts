@@ -1,5 +1,5 @@
 import type { TFunction } from 'i18next';
-import type { Project } from '../../../types/app';
+import type { Project, ProjectSession } from '../../../types/app';
 import type {
   AdditionalSessionsByProject,
   ProjectSortOrder,
@@ -49,6 +49,21 @@ export const getSessionDate = (session: SessionWithProvider): Date => {
   }
 
   return new Date(session.lastActivity || session.createdAt || 0);
+};
+
+export const getSessionIdentityKey = (
+  session: Pick<ProjectSession, 'id' | '__provider'>,
+): string => `${session.__provider || 'claude'}:${session.id}`;
+
+export const isSameSessionIdentity = (
+  left: Pick<ProjectSession, 'id' | '__provider'> | null | undefined,
+  right: Pick<ProjectSession, 'id' | '__provider'> | null | undefined,
+): boolean => {
+  if (!left || !right) {
+    return false;
+  }
+
+  return getSessionIdentityKey(left) === getSessionIdentityKey(right);
 };
 
 export const getSessionName = (session: SessionWithProvider, t: TFunction): string => {
@@ -122,9 +137,19 @@ export const getAllSessions = (
     __provider: 'gemini' as const,
   }));
 
-  return [...claudeSessions, ...cursorSessions, ...codexSessions, ...geminiSessions].sort(
+  const sortedSessions = [...claudeSessions, ...cursorSessions, ...codexSessions, ...geminiSessions].sort(
     (a, b) => getSessionDate(b).getTime() - getSessionDate(a).getTime(),
   );
+
+  const uniqueSessions = new Map<string, SessionWithProvider>();
+  for (const session of sortedSessions) {
+    const identityKey = getSessionIdentityKey(session);
+    if (!uniqueSessions.has(identityKey)) {
+      uniqueSessions.set(identityKey, session);
+    }
+  }
+
+  return Array.from(uniqueSessions.values());
 };
 
 export const getProjectLastActivity = (

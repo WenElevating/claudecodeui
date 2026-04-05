@@ -14,10 +14,7 @@ import type {
 import MicButton from '../../../mic-button/view/MicButton';
 import type { PendingPermissionRequest, PermissionMode, Provider } from '../../types/types';
 import CommandMenu from './CommandMenu';
-import ClaudeStatus from './ClaudeStatus';
 import ImageAttachment from './ImageAttachment';
-import PermissionRequestsBanner from './PermissionRequestsBanner';
-import TerminalSessionBanner from './TerminalSessionBanner';
 import ChatInputControls from './ChatInputControls';
 
 interface MentionableFile {
@@ -37,14 +34,7 @@ interface SlashCommand {
 
 interface ChatComposerProps {
   pendingPermissionRequests: PendingPermissionRequest[];
-  handlePermissionDecision: (
-    requestIds: string | string[],
-    decision: { allow?: boolean; message?: string; rememberEntry?: string | null; updatedInput?: unknown },
-  ) => void;
-  handleGrantToolPermission: (suggestion: { entry: string; toolName: string }) => { success: boolean };
-  claudeStatus: { text: string; tokens: number; can_interrupt: boolean } | null;
   isLoading: boolean;
-  onAbortSession: () => void;
   sessionInTerminal: { active: boolean; provider: string | null };
   provider: Provider | string;
   permissionMode: PermissionMode | string;
@@ -98,11 +88,7 @@ interface ChatComposerProps {
 
 export default function ChatComposer({
   pendingPermissionRequests,
-  handlePermissionDecision,
-  handleGrantToolPermission,
-  claudeStatus,
   isLoading,
-  onAbortSession,
   sessionInTerminal,
   provider,
   permissionMode,
@@ -161,38 +147,17 @@ export default function ChatComposer({
     bottom: textareaRect ? window.innerHeight - textareaRect.top + 8 : 90,
   };
 
-  // Detect if the AskUserQuestion interactive panel is active
   const hasQuestionPanel = pendingPermissionRequests.some(
     (r) => r.toolName === 'AskUserQuestion'
   );
 
-  // On mobile, when input is focused, float the input box at the bottom
   const mobileFloatingClass = isInputFocused
     ? 'max-sm:fixed max-sm:bottom-0 max-sm:left-0 max-sm:right-0 max-sm:z-50 max-sm:bg-background max-sm:shadow-[0_-4px_20px_rgba(0,0,0,0.15)]'
     : '';
 
   return (
     <div className={`flex-shrink-0 p-2 pb-2 sm:p-4 sm:pb-4 md:p-4 md:pb-6 ${mobileFloatingClass}`}>
-      {!hasQuestionPanel && (
-        <div className="flex-1">
-          <ClaudeStatus
-            status={claudeStatus}
-            isLoading={isLoading}
-            onAbort={onAbortSession}
-            provider={provider}
-          />
-        </div>
-      )}
-
-      {sessionInTerminal.active && <TerminalSessionBanner />}
-
       <div className="mx-auto mb-3 max-w-4xl">
-        <PermissionRequestsBanner
-          pendingPermissionRequests={pendingPermissionRequests}
-          handlePermissionDecision={handlePermissionDecision}
-          handleGrantToolPermission={handleGrantToolPermission}
-        />
-
         {!hasQuestionPanel && <ChatInputControls
           permissionMode={permissionMode}
           onModeSwitch={onModeSwitch}

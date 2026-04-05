@@ -5,6 +5,7 @@ import type { Project, ProjectSession, SessionProvider } from '../../../../types
 import type { SessionWithProvider } from '../../types/types';
 import { useUiVersion } from '../../../../hooks/useUiVersion';
 import { cn } from '../../../../lib/utils';
+import { getSessionIdentityKey } from '../../utils/utils';
 import SidebarSessionItem from './SidebarSessionItem';
 import SidebarSessionItemV2 from './SidebarSessionItemV2';
 
@@ -129,7 +130,7 @@ export default function SidebarProjectSessions({
       ) : (
         sessions.map((session) => (
           <SessionItemComponent
-            key={session.id}
+            key={getSessionIdentityKey(session)}
             project={project}
             session={session}
             selectedSession={selectedSession}

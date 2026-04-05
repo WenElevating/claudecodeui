@@ -8,12 +8,14 @@ import type {
   DeleteProjectConfirmation,
   LoadingSessionsByProject,
   ProjectSortOrder,
+  SessionDeleteAction,
   SessionDeleteConfirmation,
   SessionWithProvider,
 } from '../types/types';
 import {
   filterProjects,
   getAllSessions,
+  getSessionIdentityKey,
   loadStarredProjects,
   persistStarredProjects,
   readProjectSortOrder,
@@ -68,7 +70,7 @@ type UseSidebarControllerArgs = {
   onRefresh: () => Promise<void> | void;
   onProjectSelect: (project: Project) => void;
   onSessionSelect: (session: ProjectSession) => void;
-  onSessionDelete?: (sessionId: string) => void;
+  onSessionDelete?: (action: SessionDeleteAction) => void;
   onProjectDelete?: (projectName: string) => void;
   setCurrentProject: (project: Project) => void;
   setSidebarVisible: (visible: boolean) => void;
@@ -429,6 +431,8 @@ export function useSidebarController({
       let response;
       if (provider === 'codex') {
         response = await api.deleteCodexSession(sessionId);
+      } else if (provider === 'cursor') {
+        response = await api.deleteCursorSession(projectName, sessionId);
       } else if (provider === 'gemini') {
         response = await api.deleteGeminiSession(sessionId);
       } else {
@@ -436,7 +440,11 @@ export function useSidebarController({
       }
 
       if (response.ok) {
-        onSessionDelete?.(sessionId);
+        setAdditionalSessions((prev) => ({
+          ...prev,
+          [projectName]: (prev[projectName] || []).filter((session) => session.id !== sessionId),
+        }));
+        onSessionDelete?.({ projectName, sessionId, provider });
       } else {
         const errorText = await response.text();
         console.error('[Sidebar] Failed to delete session:', {
@@ -520,7 +528,14 @@ export function useSidebarController({
 
         setAdditionalSessions((prev) => ({
           ...prev,
-          [project.name]: [...(prev[project.name] || []), ...(result.sessions || [])],
+          [project.name]: Array.from(
+            new Map(
+              [...(prev[project.name] || []), ...(result.sessions || [])].map((session) => [
+                getSessionIdentityKey({ ...session, __provider: 'claude' }),
+                session,
+              ]),
+            ).values(),
+          ),
         }));
 
         if (result.hasMore === false) {
@@ -554,7 +569,7 @@ export function useSidebarController({
   }, [onRefresh]);
 
   const updateSessionSummary = useCallback(
-    async (_projectName: string, sessionId: string, summary: string, provider: SessionProvider) => {
+    async (projectName: string, sessionId: string, summary: string, provider: SessionProvider) => {
       const trimmed = summary.trim();
       if (!trimmed) {
         setEditingSession(null);
@@ -564,6 +579,14 @@ export function useSidebarController({
       try {
         const response = await api.renameSession(sessionId, trimmed, provider);
         if (response.ok) {
+          setAdditionalSessions((prev) => ({
+            ...prev,
+            [projectName]: (prev[projectName] || []).map((session) =>
+              session.id === sessionId
+                ? { ...session, summary: trimmed }
+                : session,
+            ),
+          }));
           await onRefresh();
         } else {
           console.error('[Sidebar] Failed to rename session:', response.status);
