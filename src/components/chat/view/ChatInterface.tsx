@@ -258,7 +258,8 @@ function ChatInterface({
     const providerVal = (localStorage.getItem('selected-provider') as SessionProvider) || 'claude';
     const sessionProvider = (selectedSession.__provider || providerVal) as SessionProvider;
 
-    await sessionStore.refreshFromServer(`${sessionProvider}:${selectedSession.id}`, {
+    await sessionStore.refreshFromServer(selectedSession.id, {
+      storeKey: `${sessionProvider}:${selectedSession.id}`,
       provider: (selectedSession.__provider || providerVal) as SessionProvider,
       projectName: selectedProject.name,
       projectPath: selectedProject.fullPath || selectedProject.path || '',
@@ -415,7 +416,8 @@ function ChatInterface({
 
     const sessionProvider = (selectedSession?.__provider || provider) as SessionProvider;
     const refreshTimers = COMPLETE_REFRESH_DELAYS_MS.map((delayMs) => setTimeout(() => {
-      void sessionStore.refreshFromServer(`${sessionProvider}:${activeViewSessionId}`, {
+      void sessionStore.refreshFromServer(activeViewSessionId, {
+        storeKey: `${sessionProvider}:${activeViewSessionId}`,
         provider: sessionProvider,
         projectName: selectedProject.name,
         projectPath: selectedProject.fullPath || selectedProject.path || '',

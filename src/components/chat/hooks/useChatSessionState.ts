@@ -286,7 +286,8 @@ export function useChatSessionState({
       const requestSessionId = selectedSession.id;
 
       try {
-        const slot = await sessionStore.fetchMore(getStoreKey(selectedSession.id, sessionProvider), {
+        const slot = await sessionStore.fetchMore(selectedSession.id, {
+          storeKey: getStoreKey(selectedSession.id, sessionProvider),
           provider: sessionProvider as SessionProvider,
           projectName: selectedProject.name,
           projectPath: selectedProject.fullPath || selectedProject.path || '',
@@ -442,7 +443,8 @@ export function useChatSessionState({
 
     // Fetch from server → store updates → chatMessages re-derives automatically
     setIsLoadingSessionMessages(true);
-    sessionStore.fetchFromServer(storeSessionKey, {
+    sessionStore.fetchFromServer(selectedSession.id, {
+      storeKey: storeSessionKey,
       provider: (selectedSession.__provider || provider) as SessionProvider,
       projectName: selectedProject.name,
       projectPath: selectedProject.fullPath || selectedProject.path || '',
@@ -499,8 +501,9 @@ export function useChatSessionState({
           }
 
           await sessionStore.refreshFromServer(
-            getStoreKey(selectedSession.id, selectedSession.__provider || provider),
+            selectedSession.id,
             {
+            storeKey: getStoreKey(selectedSession.id, selectedSession.__provider || provider),
             provider: (selectedSession.__provider || provider) as SessionProvider,
             projectName: selectedProject.name,
             projectPath: selectedProject.fullPath || selectedProject.path || '',
@@ -563,8 +566,9 @@ export function useChatSessionState({
           try {
             // Load all messages into the store for search navigation
             const slot = await sessionStore.fetchFromServer(
-              getStoreKey(selectedSession.id, sessionProvider),
+              selectedSession.id,
               {
+              storeKey: getStoreKey(selectedSession.id, sessionProvider),
               provider: sessionProvider as SessionProvider,
               projectName: selectedProject.name,
               projectPath: selectedProject.fullPath || selectedProject.path || '',
@@ -767,7 +771,8 @@ export function useChatSessionState({
     const previousScrollTop = container ? container.scrollTop : 0;
 
     try {
-      const slot = await sessionStore.fetchFromServer(getStoreKey(requestSessionId, sessionProvider), {
+      const slot = await sessionStore.fetchFromServer(requestSessionId, {
+        storeKey: getStoreKey(requestSessionId, sessionProvider),
         provider: sessionProvider as SessionProvider,
         projectName: selectedProject.name,
         projectPath: selectedProject.fullPath || selectedProject.path || '',

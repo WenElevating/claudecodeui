@@ -234,6 +234,10 @@ export function useSessionStore() {
   }, []);
 
   const has = useCallback((sessionId: string) => storeRef.current.has(sessionId), []);
+  const getSlotKey = useCallback(
+    (sessionId: string, storeKey?: string) => storeKey || sessionId,
+    [],
+  );
 
   /**
    * Fetch messages from the unified endpoint and populate serverMessages.
@@ -241,6 +245,7 @@ export function useSessionStore() {
   const fetchFromServer = useCallback(async (
     sessionId: string,
     opts: {
+      storeKey?: string;
       provider?: SessionProvider;
       projectName?: string;
       projectPath?: string;
@@ -248,9 +253,10 @@ export function useSessionStore() {
       offset?: number;
     } = {},
   ) => {
-    const slot = getSlot(sessionId);
+    const slotKey = getSlotKey(sessionId, opts.storeKey);
+    const slot = getSlot(slotKey);
     slot.status = 'loading';
-    notify(sessionId);
+    notify(slotKey);
 
     try {
       const params = new URLSearchParams();
@@ -284,15 +290,15 @@ export function useSessionStore() {
         slot.tokenUsage = data.tokenUsage;
       }
 
-      notify(sessionId);
+      notify(slotKey);
       return slot;
     } catch (error) {
       console.error(`[SessionStore] fetch failed for ${sessionId}:`, error);
       slot.status = 'error';
-      notify(sessionId);
+      notify(slotKey);
       return slot;
     }
-  }, [getSlot, notify]);
+  }, [getSlot, getSlotKey, notify]);
 
   /**
    * Load older (paginated) messages and prepend to serverMessages.
@@ -300,13 +306,15 @@ export function useSessionStore() {
   const fetchMore = useCallback(async (
     sessionId: string,
     opts: {
+      storeKey?: string;
       provider?: SessionProvider;
       projectName?: string;
       projectPath?: string;
       limit?: number;
     } = {},
   ) => {
-    const slot = getSlot(sessionId);
+    const slotKey = getSlotKey(sessionId, opts.storeKey);
+    const slot = getSlot(slotKey);
     if (!slot.hasMore) return slot;
 
     const params = new URLSearchParams();
@@ -331,13 +339,13 @@ export function useSessionStore() {
       slot.hasMore = Boolean(data.hasMore);
       slot.offset = slot.offset + olderMessages.length;
       recomputeMergedIfNeeded(slot);
-      notify(sessionId);
+      notify(slotKey);
       return slot;
     } catch (error) {
       console.error(`[SessionStore] fetchMore failed for ${sessionId}:`, error);
       return slot;
     }
-  }, [getSlot, notify]);
+  }, [getSlot, getSlotKey, notify]);
 
   /**
    * Append a realtime (WebSocket) message to the correct session slot.
@@ -375,12 +383,14 @@ export function useSessionStore() {
   const refreshFromServer = useCallback(async (
     sessionId: string,
     opts: {
+      storeKey?: string;
       provider?: SessionProvider;
       projectName?: string;
       projectPath?: string;
     } = {},
   ) => {
-    const slot = getSlot(sessionId);
+    const slotKey = getSlotKey(sessionId, opts.storeKey);
+    const slot = getSlot(slotKey);
     try {
       const params = new URLSearchParams();
       if (opts.provider) params.append('provider', opts.provider);
@@ -415,11 +425,11 @@ export function useSessionStore() {
       );
       slot.realtimeMessages = nonDupPreserved;
       recomputeMergedIfNeeded(slot);
-      notify(sessionId);
+      notify(slotKey);
     } catch (error) {
       console.error(`[SessionStore] refresh failed for ${sessionId}:`, error);
     }
-  }, [getSlot, notify]);
+  }, [getSlot, getSlotKey, notify]);
 
   /**
    * Update session status.
