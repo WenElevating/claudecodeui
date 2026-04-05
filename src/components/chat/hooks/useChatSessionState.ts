@@ -4,11 +4,13 @@ import { authenticatedFetch } from '../../../utils/api';
 import type { ChatMessage, Provider } from '../types/types';
 import type { Project, ProjectSession, SessionProvider } from '../../../types/app';
 import { createCachedDiffCalculator, type DiffCalculator } from '../utils/messageTransforms';
+import { getSessionStoreKey } from '../../../stores/useSessionStore';
 import type { SessionStore, NormalizedMessage } from '../../../stores/useSessionStore';
 import { normalizedToChatMessages } from './useChatMessages';
 
 const MESSAGES_PER_PAGE = 20;
 const INITIAL_VISIBLE_MESSAGES = 100;
+const EXTERNAL_REFRESH_SETTLE_MS = 900;
 
 type PendingViewSession = {
   sessionId: string | null;
@@ -100,6 +102,15 @@ export function useChatSessionState({
   pendingViewSessionRef,
   sessionStore,
 }: UseChatSessionStateArgs) {
+  const getStoreKey = useCallback(
+    (sessionId: string, sessionProvider?: SessionProvider | null) =>
+      getSessionStoreKey(
+        sessionId,
+        sessionProvider || selectedSession?.__provider || (localStorage.getItem('selected-provider') as SessionProvider) || 'claude',
+      ),
+    [selectedSession?.__provider],
+  );
+
   const [isLoading, setIsLoading] = useState(false);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(selectedSession?.id || null);
   const [isLoadingSessionMessages, setIsLoadingSessionMessages] = useState(false);
@@ -121,7 +132,6 @@ export function useChatSessionState({
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [searchTarget, setSearchTarget] = useState<{ timestamp?: string; uuid?: string; snippet?: string } | null>(null);
   const searchScrollActiveRef = useRef(false);
-  const isLoadingSessionRef = useRef(false);
   const isLoadingMoreRef = useRef(false);
   const allMessagesLoadedRef = useRef(false);
   const topLoadLockRef = useRef(false);
@@ -132,6 +142,14 @@ export function useChatSessionState({
   const loadAllFinishedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const loadAllOverlayTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastLoadedSessionKeyRef = useRef<string | null>(null);
+  const selectedSessionIdRef = useRef<string | null>(selectedSession?.id || null);
+  const sessionLoadRequestRef = useRef(0);
+  const externalRefreshRequestRef = useRef(0);
+  const externalRefreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    selectedSessionIdRef.current = selectedSession?.id || null;
+  }, [selectedSession?.id]);
 
   const createDiff = useMemo<DiffCalculator>(() => createCachedDiffCalculator(), []);
 
@@ -140,28 +158,54 @@ export function useChatSessionState({
   /* ---------------------------------------------------------------- */
 
   const activeSessionId = selectedSession?.id || currentSessionId || null;
+  const activeStoreSessionKey = activeSessionId
+    ? getStoreKey(activeSessionId, selectedSession?.__provider || ((localStorage.getItem('selected-provider') as SessionProvider) || 'claude'))
+    : null;
   const [pendingUserMessage, setPendingUserMessage] = useState<ChatMessage | null>(null);
 
   // Tell the store which session we're viewing so it only re-renders for this one
   const prevActiveForStoreRef = useRef<string | null>(null);
-  if (activeSessionId !== prevActiveForStoreRef.current) {
-    prevActiveForStoreRef.current = activeSessionId;
-    sessionStore.setActiveSession(activeSessionId);
+  if (activeStoreSessionKey !== prevActiveForStoreRef.current) {
+    prevActiveForStoreRef.current = activeStoreSessionKey;
+    sessionStore.setActiveSession(activeStoreSessionKey);
   }
 
-  // When a real session ID arrives and we have a pending user message, flush it to the store
-  const prevActiveSessionRef = useRef<string | null>(null);
-  if (activeSessionId && activeSessionId !== prevActiveSessionRef.current && pendingUserMessage) {
+  // Flush the optimistic user message after a real session becomes active.
+  const flushedPendingMessageSessionRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!activeSessionId || !pendingUserMessage) {
+      return;
+    }
+
+    if (flushedPendingMessageSessionRef.current === activeSessionId) {
+      return;
+    }
+
     const prov = (localStorage.getItem('selected-provider') as SessionProvider) || 'claude';
     const normalized = chatMessageToNormalized(pendingUserMessage, activeSessionId, prov);
     if (normalized) {
-      sessionStore.appendRealtime(activeSessionId, normalized);
+      sessionStore.appendRealtime(getStoreKey(activeSessionId, prov), normalized);
     }
+    flushedPendingMessageSessionRef.current = activeSessionId;
     setPendingUserMessage(null);
-  }
-  prevActiveSessionRef.current = activeSessionId;
+  }, [activeSessionId, getStoreKey, pendingUserMessage, sessionStore]);
 
-  const storeMessages = activeSessionId ? sessionStore.getMessages(activeSessionId) : [];
+  useEffect(() => {
+    if (!pendingUserMessage) {
+      flushedPendingMessageSessionRef.current = null;
+    }
+  }, [pendingUserMessage]);
+
+  useEffect(() => {
+    return () => {
+      if (externalRefreshTimerRef.current) {
+        clearTimeout(externalRefreshTimerRef.current);
+        externalRefreshTimerRef.current = null;
+      }
+    };
+  }, []);
+
+  const storeMessages = activeStoreSessionKey ? sessionStore.getMessages(activeStoreSessionKey) : [];
 
   // Reset viewHiddenCount when store messages change
   const prevStoreLenRef = useRef(0);
@@ -193,14 +237,14 @@ export function useChatSessionState({
     const prov = (localStorage.getItem('selected-provider') as SessionProvider) || 'claude';
     const normalized = chatMessageToNormalized(msg, activeSessionId, prov);
     if (normalized) {
-      sessionStore.appendRealtime(activeSessionId, normalized);
+      sessionStore.appendRealtime(getStoreKey(activeSessionId, prov), normalized);
     }
-  }, [activeSessionId, sessionStore]);
+  }, [activeSessionId, getStoreKey, sessionStore]);
 
   const clearMessages = useCallback(() => {
     if (!activeSessionId) return;
-    sessionStore.clearRealtime(activeSessionId);
-  }, [activeSessionId, sessionStore]);
+    sessionStore.clearRealtime(getStoreKey(activeSessionId));
+  }, [activeSessionId, getStoreKey, sessionStore]);
 
   const rewindMessages = useCallback((count: number) => setViewHiddenCount(count), []);
 
@@ -236,17 +280,20 @@ export function useChatSessionState({
       if (sessionProvider === 'cursor') return false;
 
       isLoadingMoreRef.current = true;
+      setIsLoadingMoreMessages(true);
       const previousScrollHeight = container.scrollHeight;
       const previousScrollTop = container.scrollTop;
+      const requestSessionId = selectedSession.id;
 
       try {
-        const slot = await sessionStore.fetchMore(selectedSession.id, {
+        const slot = await sessionStore.fetchMore(getStoreKey(selectedSession.id, sessionProvider), {
           provider: sessionProvider as SessionProvider,
           projectName: selectedProject.name,
           projectPath: selectedProject.fullPath || selectedProject.path || '',
           limit: MESSAGES_PER_PAGE,
         });
         if (!slot || slot.serverMessages.length === 0) return false;
+        if (selectedSessionIdRef.current !== requestSessionId) return false;
 
         pendingScrollRestoreRef.current = { height: previousScrollHeight, top: previousScrollTop };
         setHasMoreMessages(slot.hasMore);
@@ -255,9 +302,10 @@ export function useChatSessionState({
         return true;
       } finally {
         isLoadingMoreRef.current = false;
+        setIsLoadingMoreMessages(false);
       }
     },
-    [hasMoreMessages, isLoadingMoreMessages, selectedProject, selectedSession, sessionStore],
+    [getStoreKey, hasMoreMessages, isLoadingMoreMessages, selectedProject, selectedSession, sessionStore],
   );
 
   const handleScroll = useCallback(async () => {
@@ -310,6 +358,7 @@ export function useChatSessionState({
   // Main session loading effect — store-based
   useEffect(() => {
     if (!selectedSession || !selectedProject) {
+      sessionLoadRequestRef.current += 1;
       // Don't reset if we have a pending session being created (currentSessionId starts with 'new-session-')
       // or if we just received a session_created event and the session data hasn't propagated yet
       const hasPendingSession = currentSessionId && (
@@ -342,7 +391,8 @@ export function useChatSessionState({
     const sessionKey = `${selectedSession.id}:${selectedProject.name}:${provider}`;
 
     // Skip if already loaded and fresh
-    if (lastLoadedSessionKeyRef.current === sessionKey && sessionStore.has(selectedSession.id) && !sessionStore.isStale(selectedSession.id)) {
+    const storeSessionKey = getStoreKey(selectedSession.id, selectedSession.__provider || provider);
+    if (lastLoadedSessionKeyRef.current === sessionKey && sessionStore.has(storeSessionKey) && !sessionStore.isStale(storeSessionKey)) {
       return;
     }
 
@@ -388,16 +438,18 @@ export function useChatSessionState({
     }
 
     lastLoadedSessionKeyRef.current = sessionKey;
+    const requestId = ++sessionLoadRequestRef.current;
 
     // Fetch from server → store updates → chatMessages re-derives automatically
     setIsLoadingSessionMessages(true);
-    sessionStore.fetchFromServer(selectedSession.id, {
+    sessionStore.fetchFromServer(storeSessionKey, {
       provider: (selectedSession.__provider || provider) as SessionProvider,
       projectName: selectedProject.name,
       projectPath: selectedProject.fullPath || selectedProject.path || '',
       limit: MESSAGES_PER_PAGE,
       offset: 0,
     }).then(slot => {
+      if (sessionLoadRequestRef.current !== requestId) return;
       if (slot) {
         setHasMoreMessages(slot.hasMore);
         setTotalMessages(slot.total);
@@ -405,13 +457,16 @@ export function useChatSessionState({
       }
       setIsLoadingSessionMessages(false);
     }).catch(() => {
+      if (sessionLoadRequestRef.current !== requestId) return;
       setIsLoadingSessionMessages(false);
     });
   }, [
+    currentSessionId,
+    getStoreKey,
     pendingViewSessionRef,
     resetStreamingState,
     selectedProject,
-    selectedSession?.id,
+    selectedSession,
     sendMessage,
     ws,
     sessionStore,
@@ -420,18 +475,38 @@ export function useChatSessionState({
   // External message update (e.g. WebSocket reconnect, background refresh)
   useEffect(() => {
     if (!externalMessageUpdate || !selectedSession || !selectedProject) return;
+    const requestId = ++externalRefreshRequestRef.current;
 
-    const reloadExternalMessages = async () => {
+    const reloadExternalMessages = async (forced = false) => {
       try {
         const provider = (localStorage.getItem('selected-provider') as Provider) || 'claude';
+        const activeSlot = sessionStore.getSessionSlot(
+          getStoreKey(selectedSession.id, selectedSession.__provider || provider),
+        );
+        const hasTransientRealtime = (activeSlot?.realtimeMessages.length || 0) > 0;
 
         // Skip store refresh during active streaming
         if (!isLoading) {
-          await sessionStore.refreshFromServer(selectedSession.id, {
+          if (!forced && hasTransientRealtime) {
+            if (externalRefreshTimerRef.current) {
+              clearTimeout(externalRefreshTimerRef.current);
+            }
+            externalRefreshTimerRef.current = setTimeout(() => {
+              externalRefreshTimerRef.current = null;
+              void reloadExternalMessages(true);
+            }, EXTERNAL_REFRESH_SETTLE_MS);
+            return;
+          }
+
+          await sessionStore.refreshFromServer(
+            getStoreKey(selectedSession.id, selectedSession.__provider || provider),
+            {
             provider: (selectedSession.__provider || provider) as SessionProvider,
             projectName: selectedProject.name,
             projectPath: selectedProject.fullPath || selectedProject.path || '',
-          });
+            },
+          );
+          if (externalRefreshRequestRef.current !== requestId) return;
 
           if (Boolean(autoScrollToBottom) && isNearBottom()) {
             setTimeout(() => scrollToBottom(), 200);
@@ -446,6 +521,7 @@ export function useChatSessionState({
   }, [
     autoScrollToBottom,
     externalMessageUpdate,
+    getStoreKey,
     isNearBottom,
     scrollToBottom,
     selectedProject,
@@ -482,16 +558,24 @@ export function useChatSessionState({
     const scrollToTarget = async () => {
       if (!allMessagesLoadedRef.current && selectedSession && selectedProject) {
         const sessionProvider = selectedSession.__provider || 'claude';
+        const requestSessionId = selectedSession.id;
         if (sessionProvider !== 'cursor') {
           try {
             // Load all messages into the store for search navigation
-            const slot = await sessionStore.fetchFromServer(selectedSession.id, {
+            const slot = await sessionStore.fetchFromServer(
+              getStoreKey(selectedSession.id, sessionProvider),
+              {
               provider: sessionProvider as SessionProvider,
               projectName: selectedProject.name,
               projectPath: selectedProject.fullPath || selectedProject.path || '',
               limit: null,
               offset: 0,
-            });
+              },
+            );
+            if (selectedSessionIdRef.current !== requestSessionId) {
+              searchScrollActiveRef.current = false;
+              return;
+            }
             if (slot) {
               setHasMoreMessages(false);
               setTotalMessages(slot.total);
@@ -623,11 +707,22 @@ export function useChatSessionState({
     const activeViewSessionId = selectedSession?.id || currentSessionId;
     if (!activeViewSessionId || !processingSessions) return;
     const shouldBeProcessing = processingSessions.has(activeViewSessionId);
-    if (shouldBeProcessing && !isLoading) {
+    const activeSlot = sessionStore.getSessionSlot(getStoreKey(activeViewSessionId));
+    const hasVisibleRealtimeOutput = (activeSlot?.realtimeMessages || []).some((message) =>
+      message.kind === 'thinking' ||
+      message.kind === 'tool_use' ||
+      message.kind === 'tool_result' ||
+      message.kind === 'interactive_prompt' ||
+      message.kind === 'task_notification' ||
+      (message.kind === 'text' && message.role === 'assistant') ||
+      message.kind === 'stream_delta'
+    );
+
+    if (shouldBeProcessing && !isLoading && !hasVisibleRealtimeOutput) {
       setIsLoading(true);
       setCanAbortSession(true);
     }
-  }, [currentSessionId, isLoading, processingSessions, selectedSession?.id]);
+  }, [currentSessionId, getStoreKey, isLoading, processingSessions, selectedSession?.id, sessionStore]);
 
   // "Load all" overlay
   const prevLoadingRef = useRef(false);
@@ -672,7 +767,7 @@ export function useChatSessionState({
     const previousScrollTop = container ? container.scrollTop : 0;
 
     try {
-      const slot = await sessionStore.fetchFromServer(requestSessionId, {
+      const slot = await sessionStore.fetchFromServer(getStoreKey(requestSessionId, sessionProvider), {
         provider: sessionProvider as SessionProvider,
         projectName: selectedProject.name,
         projectPath: selectedProject.fullPath || selectedProject.path || '',
@@ -680,7 +775,7 @@ export function useChatSessionState({
         offset: 0,
       });
 
-      if (currentSessionId !== requestSessionId) return;
+      if (selectedSessionIdRef.current !== requestSessionId) return;
 
       if (slot) {
         if (container) {
@@ -708,7 +803,7 @@ export function useChatSessionState({
       isLoadingMoreRef.current = false;
       setIsLoadingAllMessages(false);
     }
-  }, [selectedSession, selectedProject, isLoadingAllMessages, currentSessionId, sessionStore]);
+  }, [getStoreKey, selectedSession, selectedProject, isLoadingAllMessages, sessionStore]);
 
   const loadEarlierMessages = useCallback(() => {
     setVisibleMessageCount((prev) => prev + 100);

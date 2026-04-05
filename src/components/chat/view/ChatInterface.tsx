@@ -1,8 +1,8 @@
-import React, { useCallback, useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useTasksSettings } from '../../../contexts/TasksSettingsContext';
 import { QuickSettingsPanel } from '../../quick-settings-panel';
-import type { ChatInterfaceProps, Provider  } from '../types/types';
+import type { ChatInterfaceProps, Provider } from '../types/types';
 import type { SessionProvider } from '../../../types/app';
 import { useChatProviderState } from '../hooks/useChatProviderState';
 import { useChatSessionState } from '../hooks/useChatSessionState';
@@ -13,12 +13,46 @@ import { useUiVersion } from '../../../hooks/useUiVersion';
 import ChatMessagesPane from './subcomponents/ChatMessagesPane';
 import ChatComposer from './subcomponents/ChatComposer';
 import ChatComposerV2 from './subcomponents/ChatComposerV2';
-
+import ChatStatusMessage from './subcomponents/ChatStatusMessage';
+import PermissionRequestsBanner from './subcomponents/PermissionRequestsBanner';
 
 type PendingViewSession = {
   sessionId: string | null;
   startedAt: number;
 };
+
+type StatusOutcome = {
+  kind: 'complete' | 'error' | 'aborted';
+  text: string;
+  timestamp: number;
+} | null;
+
+const COMPLETE_REFRESH_DELAYS_MS = [300, 1200];
+
+function getLiveActivityText(message: Record<string, unknown>, t: (key: string, options?: Record<string, unknown>) => string): string | null {
+  switch (message.kind) {
+    case 'thinking_start':
+    case 'thinking_delta':
+    case 'thinking':
+      return t('claudeStatus.actions.thinking', { defaultValue: 'Thinking' });
+    case 'stream_delta':
+      return t('claudeStatus.actions.working', { defaultValue: 'Working' });
+    case 'text':
+      return message.role === 'assistant'
+        ? t('claudeStatus.actions.working', { defaultValue: 'Working' })
+        : null;
+    case 'tool_use': {
+      const toolName = typeof message.toolName === 'string' ? message.toolName : '';
+      return toolName
+        ? `${t('claudeStatus.actions.processing', { defaultValue: 'Processing' })} ${toolName}`
+        : t('claudeStatus.actions.processing', { defaultValue: 'Processing' });
+    }
+    case 'tool_result':
+      return t('claudeStatus.actions.reasoning', { defaultValue: 'Reasoning' });
+    default:
+      return null;
+  }
+}
 
 function ChatInterface({
   selectedProject,
@@ -126,6 +160,7 @@ function ChatInterface({
     scrollContainerRef,
     scrollToBottom,
     scrollToBottomAndReset,
+    isNearBottom,
     handleScroll,
   } = useChatSessionState({
     selectedProject,
@@ -218,24 +253,22 @@ function ChatInterface({
     setPendingPermissionRequests,
   });
 
-  // On WebSocket reconnect, re-fetch the current session's messages from the server
-  // so missed streaming events are shown. Also reset isLoading.
   const handleWebSocketReconnect = useCallback(async () => {
     if (!selectedProject || !selectedSession) return;
     const providerVal = (localStorage.getItem('selected-provider') as SessionProvider) || 'claude';
-    await sessionStore.refreshFromServer(selectedSession.id, {
+    const sessionProvider = (selectedSession.__provider || providerVal) as SessionProvider;
+
+    await sessionStore.refreshFromServer(`${sessionProvider}:${selectedSession.id}`, {
       provider: (selectedSession.__provider || providerVal) as SessionProvider,
       projectName: selectedProject.name,
       projectPath: selectedProject.fullPath || selectedProject.path || '',
     });
-    setIsLoading(false);
-    setCanAbortSession(false);
-  }, [selectedProject, selectedSession, sessionStore, setIsLoading, setCanAbortSession]);
+    sendMessage({ type: 'check-session-status', sessionId: selectedSession.id, provider: sessionProvider });
+  }, [selectedProject, selectedSession, sendMessage, sessionStore]);
 
   useChatRealtimeHandlers({
     latestMessage,
     provider,
-    selectedProject,
     selectedSession,
     currentSessionId,
     setCurrentSessionId,
@@ -259,6 +292,169 @@ function ChatInterface({
     onWebSocketReconnect: handleWebSocketReconnect,
     sessionStore,
   });
+
+  const activeViewSessionId = selectedSession?.id || currentSessionId || pendingViewSessionRef.current?.sessionId || null;
+  const [outcomeStatus, setOutcomeStatus] = useState<StatusOutcome>(null);
+  const lastAssistantMessageAtRef = useRef(0);
+  const handledCompletionTimestampRef = useRef<number | null>(null);
+  const [liveActivityText, setLiveActivityText] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!latestMessage) {
+      return;
+    }
+
+    const msg = latestMessage as Record<string, unknown>;
+    const messageSessionId =
+      (typeof msg.sessionId === 'string' ? msg.sessionId : null) ||
+      (typeof msg.actualSessionId === 'string' ? msg.actualSessionId : null) ||
+      activeViewSessionId;
+
+    const isVisibleSession = Boolean(messageSessionId) && (
+      messageSessionId === selectedSession?.id ||
+      messageSessionId === currentSessionId ||
+      messageSessionId === pendingViewSessionRef.current?.sessionId ||
+      messageSessionId === activeViewSessionId
+    );
+
+    if (!isVisibleSession) {
+      return;
+    }
+
+    const nextLiveActivityText = getLiveActivityText(msg, t);
+    if (nextLiveActivityText) {
+      setLiveActivityText(nextLiveActivityText);
+    }
+
+    if (msg.kind === 'text' && msg.role === 'assistant' && typeof msg.content === 'string' && msg.content.trim()) {
+      lastAssistantMessageAtRef.current = Date.now();
+    }
+
+    if (msg.kind === 'complete') {
+      const isAborted = msg.aborted === true;
+      setIsLoading(false);
+      setCanAbortSession(false);
+      setClaudeStatus(null);
+      onSessionInactive?.(messageSessionId);
+      onSessionNotProcessing?.(messageSessionId);
+      setLiveActivityText(null);
+      setOutcomeStatus({
+        kind: isAborted ? 'aborted' : 'complete',
+        text: isAborted
+          ? t('claudeStatus.state.aborted', { defaultValue: 'Stopped' })
+          : t('claudeStatus.state.complete', { defaultValue: 'Done' }),
+        timestamp: Date.now(),
+      });
+      return;
+    }
+
+    if (msg.kind === 'error') {
+      setIsLoading(false);
+      setCanAbortSession(false);
+      setClaudeStatus(null);
+      onSessionInactive?.(messageSessionId);
+      onSessionNotProcessing?.(messageSessionId);
+      setLiveActivityText(null);
+      const errorText = typeof msg.content === 'string' && msg.content.trim()
+        ? msg.content.trim()
+        : t('messageTypes.error', { defaultValue: 'Error' });
+      setOutcomeStatus({
+        kind: 'error',
+        text: errorText,
+        timestamp: Date.now(),
+      });
+    }
+  }, [
+    activeViewSessionId,
+    currentSessionId,
+    latestMessage,
+    onSessionInactive,
+    onSessionNotProcessing,
+    selectedSession?.id,
+    t,
+  ]);
+
+  useEffect(() => {
+    if (isLoading || pendingPermissionRequests.length > 0 || sessionInTerminal.active) {
+      setOutcomeStatus(null);
+    }
+  }, [isLoading, pendingPermissionRequests.length, sessionInTerminal.active]);
+
+  useEffect(() => {
+    setOutcomeStatus(null);
+    handledCompletionTimestampRef.current = null;
+    setLiveActivityText(null);
+  }, [activeViewSessionId]);
+
+  useEffect(() => {
+    if (!outcomeStatus || outcomeStatus.kind !== 'complete' || !selectedProject || !activeViewSessionId) {
+      return;
+    }
+
+    if (handledCompletionTimestampRef.current === outcomeStatus.timestamp) {
+      return;
+    }
+    handledCompletionTimestampRef.current = outcomeStatus.timestamp;
+
+    const shouldSkipRefresh = Date.now() - lastAssistantMessageAtRef.current < 3000;
+    if (shouldSkipRefresh) {
+      return;
+    }
+
+    const sessionProvider = (selectedSession?.__provider || provider) as SessionProvider;
+    const refreshTimers = COMPLETE_REFRESH_DELAYS_MS.map((delayMs) => setTimeout(() => {
+      void sessionStore.refreshFromServer(`${sessionProvider}:${activeViewSessionId}`, {
+        provider: sessionProvider,
+        projectName: selectedProject.name,
+        projectPath: selectedProject.fullPath || selectedProject.path || '',
+      }).then(() => {
+        if (!isUserScrolledUp || isNearBottom()) {
+          setTimeout(() => {
+            scrollToBottomAndReset();
+          }, 80);
+        }
+      });
+    }, delayMs));
+
+    return () => {
+      refreshTimers.forEach((timer) => clearTimeout(timer));
+    };
+  }, [
+    activeViewSessionId,
+    isNearBottom,
+    isUserScrolledUp,
+    outcomeStatus,
+    provider,
+    scrollToBottomAndReset,
+    selectedProject,
+    selectedSession?.__provider,
+    sessionStore,
+  ]);
+
+  const statusMessageSlot = useMemo(() => (
+    <ChatStatusMessage
+      pendingPermissionRequests={[]}
+      handlePermissionDecision={handlePermissionDecision}
+      handleGrantToolPermission={handleGrantToolPermission}
+      status={claudeStatus}
+      isLoading={isLoading}
+      onAbort={handleAbortSession}
+      sessionInTerminal={sessionInTerminal}
+      provider={provider}
+      outcomeStatus={outcomeStatus}
+      liveActivityText={liveActivityText}
+    />
+  ), [
+    handlePermissionDecision,
+    handleGrantToolPermission,
+    claudeStatus,
+    handleAbortSession,
+    isLoading,
+    sessionInTerminal,
+    provider,
+    outcomeStatus,
+    liveActivityText,
+  ]);
 
   useEffect(() => {
     if (!isLoading || !canAbortSession) {
@@ -356,89 +552,91 @@ function ChatInterface({
           showRawParameters={showRawParameters}
           showThinking={showThinking}
           selectedProject={selectedProject}
-          isLoading={isLoading}
           isInputFocused={isInputFocused}
+          statusMessageSlot={statusMessageSlot}
+          liveStatusText={isLoading ? claudeStatus?.text || null : null}
         />
+        {pendingPermissionRequests.length > 0 && (
+          <div className="flex-shrink-0 px-2 pt-2 sm:px-4">
+            <div className="mx-auto max-w-4xl">
+              <PermissionRequestsBanner
+                pendingPermissionRequests={pendingPermissionRequests}
+                handlePermissionDecision={handlePermissionDecision}
+                handleGrantToolPermission={handleGrantToolPermission}
+              />
+            </div>
+          </div>
+        )}
 
         {useNewUi ? (
           <ChatComposerV2
-          pendingPermissionRequests={pendingPermissionRequests}
-          handlePermissionDecision={handlePermissionDecision}
-          handleGrantToolPermission={handleGrantToolPermission}
-          claudeStatus={claudeStatus}
-          isLoading={isLoading}
-          onAbortSession={handleAbortSession}
-          sessionInTerminal={sessionInTerminal}
-          provider={provider}
-          permissionMode={permissionMode}
-          onModeSwitch={cyclePermissionMode}
-          thinkingMode={thinkingMode}
-          setThinkingMode={setThinkingMode}
-          tokenBudget={tokenBudget}
-          slashCommandsCount={slashCommandsCount}
-          onToggleCommandMenu={handleToggleCommandMenu}
-          hasInput={Boolean(input.trim())}
-          onClearInput={handleClearInput}
-          isUserScrolledUp={isUserScrolledUp}
-          hasMessages={chatMessages.length > 0}
-          onScrollToBottom={scrollToBottomAndReset}
-          onSubmit={handleSubmit}
-          isDragActive={isDragActive}
-          attachedImages={attachedImages}
-          onRemoveImage={(index) =>
-            setAttachedImages((previous) =>
-              previous.filter((_, currentIndex) => currentIndex !== index),
-            )
-          }
-          uploadingImages={uploadingImages}
-          imageErrors={imageErrors}
-          showFileDropdown={showFileDropdown}
-          filteredFiles={filteredFiles}
-          selectedFileIndex={selectedFileIndex}
-          onSelectFile={selectFile}
-          filteredCommands={filteredCommands}
-          selectedCommandIndex={selectedCommandIndex}
-          onCommandSelect={handleCommandSelect}
-          onCloseCommandMenu={resetCommandMenuState}
-          isCommandMenuOpen={showCommandMenu}
-          frequentCommands={commandQuery ? [] : frequentCommands}
-          getRootProps={getRootProps as (...args: unknown[]) => Record<string, unknown>}
-          getInputProps={getInputProps as (...args: unknown[]) => Record<string, unknown>}
-          openImagePicker={openImagePicker}
-          inputHighlightRef={inputHighlightRef}
-          renderInputWithMentions={renderInputWithMentions}
-          textareaRef={textareaRef}
-          input={input}
-          onInputChange={handleInputChange}
-          onTextareaClick={handleTextareaClick}
-          onTextareaKeyDown={handleKeyDown}
-          onTextareaPaste={handlePaste}
-          onTextareaScrollSync={syncInputOverlayScroll}
-          onTextareaInput={handleTextareaInput}
-          onInputFocusChange={handleInputFocusChange}
-          isInputFocused={isInputFocused}
-          placeholder={t('input.placeholder', {
-            provider:
-              provider === 'cursor'
-                ? t('messageTypes.cursor')
-                : provider === 'codex'
-                  ? t('messageTypes.codex')
-                  : provider === 'gemini'
-                    ? t('messageTypes.gemini')
-                    : t('messageTypes.claude'),
-          })}
-          isTextareaExpanded={isTextareaExpanded}
-          sendByCtrlEnter={sendByCtrlEnter}
-          onTranscript={handleTranscript}
+            pendingPermissionRequests={pendingPermissionRequests}
+            isLoading={isLoading}
+            sessionInTerminal={sessionInTerminal}
+            provider={provider}
+            permissionMode={permissionMode}
+            onModeSwitch={cyclePermissionMode}
+            thinkingMode={thinkingMode}
+            setThinkingMode={setThinkingMode}
+            tokenBudget={tokenBudget}
+            slashCommandsCount={slashCommandsCount}
+            onToggleCommandMenu={handleToggleCommandMenu}
+            hasInput={Boolean(input.trim())}
+            onClearInput={handleClearInput}
+            isUserScrolledUp={isUserScrolledUp}
+            hasMessages={chatMessages.length > 0}
+            onScrollToBottom={scrollToBottomAndReset}
+            onSubmit={handleSubmit}
+            isDragActive={isDragActive}
+            attachedImages={attachedImages}
+            onRemoveImage={(index) =>
+              setAttachedImages((previous) =>
+                previous.filter((_, currentIndex) => currentIndex !== index),
+              )
+            }
+            uploadingImages={uploadingImages}
+            imageErrors={imageErrors}
+            showFileDropdown={showFileDropdown}
+            filteredFiles={filteredFiles}
+            selectedFileIndex={selectedFileIndex}
+            onSelectFile={selectFile}
+            filteredCommands={filteredCommands}
+            selectedCommandIndex={selectedCommandIndex}
+            onCommandSelect={handleCommandSelect}
+            onCloseCommandMenu={resetCommandMenuState}
+            isCommandMenuOpen={showCommandMenu}
+            frequentCommands={commandQuery ? [] : frequentCommands}
+            getRootProps={getRootProps as (...args: unknown[]) => Record<string, unknown>}
+            getInputProps={getInputProps as (...args: unknown[]) => Record<string, unknown>}
+            openImagePicker={openImagePicker}
+            inputHighlightRef={inputHighlightRef}
+            renderInputWithMentions={renderInputWithMentions}
+            textareaRef={textareaRef}
+            input={input}
+            onInputChange={handleInputChange}
+            onTextareaClick={handleTextareaClick}
+            onTextareaKeyDown={handleKeyDown}
+            onTextareaPaste={handlePaste}
+            onTextareaScrollSync={syncInputOverlayScroll}
+            onTextareaInput={handleTextareaInput}
+            onInputFocusChange={handleInputFocusChange}
+            isInputFocused={isInputFocused}
+            placeholder={t('input.placeholder', {
+              provider:
+                provider === 'cursor'
+                  ? t('messageTypes.cursor')
+                  : provider === 'codex'
+                    ? t('messageTypes.codex')
+                    : provider === 'gemini'
+                      ? t('messageTypes.gemini')
+                      : t('messageTypes.claude'),
+            })}
+            sendByCtrlEnter={sendByCtrlEnter}
           />
         ) : (
           <ChatComposer
             pendingPermissionRequests={pendingPermissionRequests}
-            handlePermissionDecision={handlePermissionDecision}
-            handleGrantToolPermission={handleGrantToolPermission}
-            claudeStatus={claudeStatus}
             isLoading={isLoading}
-            onAbortSession={handleAbortSession}
             sessionInTerminal={sessionInTerminal}
             provider={provider}
             permissionMode={permissionMode}

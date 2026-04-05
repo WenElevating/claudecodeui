@@ -95,6 +95,10 @@ export interface SessionSlot {
 
 const EMPTY: NormalizedMessage[] = [];
 
+export function getSessionStoreKey(sessionId: string, provider: SessionProvider | string = 'claude'): string {
+  return `${provider}:${sessionId}`;
+}
+
 function createEmptySlot(): SessionSlot {
   return {
     serverMessages: EMPTY,
