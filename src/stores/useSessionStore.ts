@@ -145,6 +145,65 @@ const STALE_THRESHOLD_MS = 30_000;
 
 const MAX_REALTIME_MESSAGES = 500;
 
+function normalizeComparableContent(content: string | undefined): string {
+  return String(content || '')
+    .replace(/\r\n/g, '\n')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function areEquivalentMessages(message: NormalizedMessage, serverMessage: NormalizedMessage): boolean {
+  if (serverMessage.id === message.id || serverMessage.kind !== message.kind) {
+    return serverMessage.id === message.id;
+  }
+
+  if (message.kind === 'text') {
+    return (
+      serverMessage.role === message.role &&
+      normalizeComparableContent(serverMessage.content) === normalizeComparableContent(message.content)
+    );
+  }
+
+  if (message.kind === 'thinking') {
+    return normalizeComparableContent(serverMessage.content) === normalizeComparableContent(message.content);
+  }
+
+  if (message.kind === 'tool_use') {
+    return serverMessage.toolId === message.toolId && serverMessage.toolName === message.toolName;
+  }
+
+  if (message.kind === 'tool_result') {
+    return serverMessage.toolId === message.toolId && serverMessage.content === message.content;
+  }
+
+  return false;
+}
+
+function filterUnpersistedTransientMessages(
+  transientMessages: NormalizedMessage[],
+  previousServerMessages: NormalizedMessage[],
+  nextServerMessages: NormalizedMessage[],
+): NormalizedMessage[] {
+  const previousServerIds = new Set(previousServerMessages.map((message) => message.id));
+  const newlyPersistedMessages = nextServerMessages.filter((message) => !previousServerIds.has(message.id));
+  if (newlyPersistedMessages.length === 0) {
+    return transientMessages;
+  }
+
+  const unmatchedPersistedMessages = [...newlyPersistedMessages];
+  return transientMessages.filter((transientMessage) => {
+    const matchIndex = unmatchedPersistedMessages.findIndex((serverMessage) =>
+      areEquivalentMessages(transientMessage, serverMessage),
+    );
+    if (matchIndex === -1) {
+      return true;
+    }
+
+    unmatchedPersistedMessages.splice(matchIndex, 1);
+    return false;
+  });
+}
+
 // ─── Hook ────────────────────────────────────────────────────────────────────
 
 export function useSessionStore() {
@@ -331,16 +390,25 @@ export function useSessionStore() {
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const data = await response.json();
 
-      slot.serverMessages = data.messages || [];
+      const previousServerMessages = slot.serverMessages;
+      const serverMessages = data.messages || [];
+      slot.serverMessages = serverMessages;
       slot.total = data.total ?? slot.serverMessages.length;
       slot.hasMore = Boolean(data.hasMore);
       slot.fetchedAt = Date.now();
-      // Preserve finalized thinking messages that the server may not have
-      const preservedThinking = slot.realtimeMessages.filter(
-        m => m.id.startsWith(THINKING_FINAL_PREFIX) && !m.id.startsWith(THINKING_STREAM_PREFIX)
+      // Preserve finalized transient messages plus optimistic local user text until
+      // equivalent persisted messages arrive from the server.
+      const preservedTransientMessages = slot.realtimeMessages.filter(
+        (m) =>
+          (m.id.startsWith(THINKING_FINAL_PREFIX) && !m.id.startsWith(THINKING_STREAM_PREFIX)) ||
+          (m.id.startsWith(TEXT_FINAL_PREFIX) && !m.id.startsWith(TEXT_STREAM_PREFIX)) ||
+          (m.id.startsWith('local_') && m.kind === 'text' && m.role === 'user')
       );
-      const serverIds = new Set((data.messages || []).map((m: NormalizedMessage) => m.id));
-      const nonDupPreserved = preservedThinking.filter(m => !serverIds.has(m.id));
+      const nonDupPreserved = filterUnpersistedTransientMessages(
+        preservedTransientMessages,
+        previousServerMessages,
+        serverMessages,
+      );
       slot.realtimeMessages = nonDupPreserved;
       recomputeMergedIfNeeded(slot);
       notify(sessionId);
@@ -477,6 +545,46 @@ export function useSessionStore() {
   }, [notify]);
 
   /**
+   * Move or merge an in-memory session slot to a new session id.
+   * Used when the UI creates a temporary client-side session id and the backend later
+   * returns the real persisted session id.
+   */
+  const migrateSession = useCallback((fromSessionId: string, toSessionId: string) => {
+    if (!fromSessionId || !toSessionId || fromSessionId === toSessionId) {
+      return;
+    }
+
+    const store = storeRef.current;
+    const fromSlot = store.get(fromSessionId);
+    if (!fromSlot) {
+      return;
+    }
+
+    const toSlot = store.get(toSessionId) || createEmptySlot();
+    toSlot.serverMessages = toSlot.serverMessages.length > 0
+      ? toSlot.serverMessages
+      : fromSlot.serverMessages;
+    toSlot.realtimeMessages = [...fromSlot.realtimeMessages, ...toSlot.realtimeMessages];
+    toSlot.total = Math.max(toSlot.total, fromSlot.total);
+    toSlot.hasMore = toSlot.hasMore || fromSlot.hasMore;
+    toSlot.offset = Math.max(toSlot.offset, fromSlot.offset);
+    toSlot.fetchedAt = Math.max(toSlot.fetchedAt, fromSlot.fetchedAt);
+    if (toSlot.tokenUsage == null && fromSlot.tokenUsage != null) {
+      toSlot.tokenUsage = fromSlot.tokenUsage;
+    }
+
+    recomputeMergedIfNeeded(toSlot);
+    store.set(toSessionId, toSlot);
+    store.delete(fromSessionId);
+
+    if (activeSessionIdRef.current === fromSessionId) {
+      activeSessionIdRef.current = toSessionId;
+    }
+
+    notify(toSessionId);
+  }, [notify]);
+
+  /**
    * Get merged messages for a session (for rendering).
    */
   const getMessages = useCallback((sessionId: string): NormalizedMessage[] => {
@@ -506,6 +614,7 @@ export function useSessionStore() {
     updateThinkingStream,
     finalizeThinking,
     clearRealtime,
+    migrateSession,
     getMessages,
     getSessionSlot,
   }), [
@@ -513,7 +622,7 @@ export function useSessionStore() {
     appendRealtime, appendRealtimeBatch, refreshFromServer,
     setActiveSession, setStatus, isStale, updateStreaming, finalizeStreaming,
     updateThinkingStream, finalizeThinking,
-    clearRealtime, getMessages, getSessionSlot,
+    clearRealtime, migrateSession, getMessages, getSessionSlot,
   ]);
 }
 

@@ -10,6 +10,14 @@ import { createNormalizedMessage, generateMessageId } from '../types.js';
 import { isInternalContent } from '../utils.js';
 
 const PROVIDER = 'claude';
+const streamingBlockTypesBySession = new Map();
+
+function getSessionBlockTypes(sessionId) {
+  if (!streamingBlockTypesBySession.has(sessionId)) {
+    streamingBlockTypesBySession.set(sessionId, new Map());
+  }
+  return streamingBlockTypesBySession.get(sessionId);
+}
 
 /**
  * Normalize a raw JSONL message or realtime SDK event into NormalizedMessage(s).
@@ -29,10 +37,12 @@ export function normalizeMessage(raw, sessionId) {
   // Thinking stream events (adaptive thinking)
   if (event.type === 'content_block_start') {
     const blockType = event.content_block?.type;
-    if (blockType === 'thinking') {
-      return [createNormalizedMessage({ kind: 'thinking_start', sessionId, provider: PROVIDER })];
+    if (typeof event.index === 'number' && blockType) {
+      getSessionBlockTypes(sessionId).set(event.index, blockType);
     }
-    // text block start - no action needed, deltas will flow
+    if (blockType === 'thinking') {
+      return [createNormalizedMessage({ kind: 'thinking_start', sessionId, provider: PROVIDER, blockType })];
+    }
     return [];
   }
 
@@ -54,10 +64,18 @@ export function normalizeMessage(raw, sessionId) {
   }
 
   if (event.type === 'content_block_stop') {
-    // We need to know which block stopped - but the event doesn't tell us
-    // The frontend will track state, so we send a generic stream_end
-    // Frontend can determine if it was thinking or text based on current state
-    return [createNormalizedMessage({ kind: 'stream_end', sessionId, provider: PROVIDER })];
+    const blockTypes = getSessionBlockTypes(sessionId);
+    const blockType = event.content_block?.type || blockTypes.get(event.index) || null;
+    if (typeof event.index === 'number') {
+      blockTypes.delete(event.index);
+      if (blockTypes.size === 0) {
+        streamingBlockTypesBySession.delete(sessionId);
+      }
+    }
+    if (blockType === 'thinking') {
+      return [createNormalizedMessage({ kind: 'thinking_end', sessionId, provider: PROVIDER })];
+    }
+    return [createNormalizedMessage({ kind: 'stream_end', sessionId, provider: PROVIDER, blockType: blockType || 'text' })];
   }
 
   // ── History / full-message events ────────────────────────────────────────
