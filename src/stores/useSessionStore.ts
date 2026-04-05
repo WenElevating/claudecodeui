@@ -208,6 +208,30 @@ function filterUnpersistedTransientMessages(
   });
 }
 
+function shouldPreserveRealtimeMessage(message: NormalizedMessage): boolean {
+  if (message.id.startsWith('local_') && message.kind === 'text' && message.role === 'user') {
+    return true;
+  }
+
+  if (message.id.startsWith(THINKING_FINAL_PREFIX) && !message.id.startsWith(THINKING_STREAM_PREFIX)) {
+    return true;
+  }
+
+  if (message.id.startsWith(TEXT_FINAL_PREFIX) && !message.id.startsWith(TEXT_STREAM_PREFIX)) {
+    return true;
+  }
+
+  return (
+    message.kind === 'text' ||
+    message.kind === 'thinking' ||
+    message.kind === 'tool_use' ||
+    message.kind === 'tool_result' ||
+    message.kind === 'interactive_prompt' ||
+    message.kind === 'task_notification' ||
+    message.kind === 'error'
+  );
+}
+
 // ─── Hook ────────────────────────────────────────────────────────────────────
 
 export function useSessionStore() {
@@ -412,12 +436,7 @@ export function useSessionStore() {
       slot.fetchedAt = Date.now();
       // Preserve finalized transient messages plus optimistic local user text until
       // equivalent persisted messages arrive from the server.
-      const preservedTransientMessages = slot.realtimeMessages.filter(
-        (m) =>
-          (m.id.startsWith(THINKING_FINAL_PREFIX) && !m.id.startsWith(THINKING_STREAM_PREFIX)) ||
-          (m.id.startsWith(TEXT_FINAL_PREFIX) && !m.id.startsWith(TEXT_STREAM_PREFIX)) ||
-          (m.id.startsWith('local_') && m.kind === 'text' && m.role === 'user')
-      );
+      const preservedTransientMessages = slot.realtimeMessages.filter(shouldPreserveRealtimeMessage);
       const nonDupPreserved = filterUnpersistedTransientMessages(
         preservedTransientMessages,
         previousServerMessages,
