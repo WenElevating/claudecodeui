@@ -163,21 +163,18 @@ export function useChatSessionState({
     : null;
   const [pendingUserMessage, setPendingUserMessage] = useState<ChatMessage | null>(null);
 
-  // Tell the store which session we're viewing so it only re-renders for this one
-  const prevActiveForStoreRef = useRef<string | null>(null);
-  if (activeStoreSessionKey !== prevActiveForStoreRef.current) {
-    prevActiveForStoreRef.current = activeStoreSessionKey;
+  useEffect(() => {
     sessionStore.setActiveSession(activeStoreSessionKey);
-  }
+  }, [activeStoreSessionKey, sessionStore]);
 
   // Flush the optimistic user message after a real session becomes active.
-  const flushedPendingMessageSessionRef = useRef<string | null>(null);
+  const flushedPendingMessageRef = useRef<ChatMessage | null>(null);
   useEffect(() => {
     if (!activeSessionId || !pendingUserMessage) {
       return;
     }
 
-    if (flushedPendingMessageSessionRef.current === activeSessionId) {
+    if (flushedPendingMessageRef.current === pendingUserMessage) {
       return;
     }
 
@@ -186,13 +183,13 @@ export function useChatSessionState({
     if (normalized) {
       sessionStore.appendRealtime(getStoreKey(activeSessionId, prov), normalized);
     }
-    flushedPendingMessageSessionRef.current = activeSessionId;
+    flushedPendingMessageRef.current = pendingUserMessage;
     setPendingUserMessage(null);
   }, [activeSessionId, getStoreKey, pendingUserMessage, sessionStore]);
 
   useEffect(() => {
     if (!pendingUserMessage) {
-      flushedPendingMessageSessionRef.current = null;
+      flushedPendingMessageRef.current = null;
     }
   }, [pendingUserMessage]);
 
@@ -207,12 +204,15 @@ export function useChatSessionState({
 
   const storeMessages = activeStoreSessionKey ? sessionStore.getMessages(activeStoreSessionKey) : [];
 
-  // Reset viewHiddenCount when store messages change
   const prevStoreLenRef = useRef(0);
-  if (storeMessages.length !== prevStoreLenRef.current) {
-    prevStoreLenRef.current = storeMessages.length;
-    if (viewHiddenCount > 0) setViewHiddenCount(0);
-  }
+  useEffect(() => {
+    if (storeMessages.length !== prevStoreLenRef.current) {
+      prevStoreLenRef.current = storeMessages.length;
+      if (viewHiddenCount > 0) {
+        setViewHiddenCount(0);
+      }
+    }
+  }, [storeMessages.length, viewHiddenCount]);
 
   const chatMessages = useMemo(() => {
     const all = normalizedToChatMessages(storeMessages);
